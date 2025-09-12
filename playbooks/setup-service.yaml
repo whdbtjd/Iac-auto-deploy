@@ -1,0 +1,20 @@
+---
+- name: Setup Spring Boot Service
+  hosts: webservers
+  become: yes
+
+
+  tasks:
+    - name: Create systemd service file                  # systemd 서비스 파일 직접 구성
+      copy:
+        content:  |
+          [Unit]
+          Description = Spring Boot Application          # 서비스 설명
+
+          [Service]
+          Execstart = /usr/bin/java -jar /src/myapp.jar  # 실행 명령 (/src는 호스트 경로)
+          User      = ec2-user
+
+          [Install]
+          WantedBy = multi-user.target                   # 부팅시 자동 시작하게
+        dest: /etc/systemd/system/myapp.service          # 서비스 파일 저장 위치
