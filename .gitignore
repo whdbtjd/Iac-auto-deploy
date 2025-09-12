@@ -1,0 +1,43 @@
+# SSH 키 및 자격증명
+*.pem
+*.key
+*.ppk
+
+# Ansible Vault 파일 (암호화된 민감정보)
+vault.yml
+*vault*
+group_vars/*/vault.yml
+host_vars/*/vault.yml
+
+# 환경별 인벤토리 (프로덕션은 보통 별도 관리)
+inventory/production
+inventory/prod.ini
+
+# 환경 설정
+.env
+config/production.yml
+secrets.yml
+
+# Ansible 로그
+ansible.log
+*.log
+logs/
+
+# 플레이북에서 생성되는 파일들
+*.retry
+.ansible/
+roles/*/files/secrets/
+
+# 임시 파일
+*.tmp
+*.swp
+*.backup
+*~
+
+# 시스템 파일
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
