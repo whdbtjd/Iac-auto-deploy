@@ -5,9 +5,9 @@
   
   tasks:
     - name: Install JDK17
-      yum:                            # yum 모듈 사용
-        name: java-17-openjdk         # 설치할 패키지
-        state: present                # 없으면 깔고 있으면 냅둠
+      dnf:                                          # yum 모듈 사용
+        name: java-17-amazon-corretto-devel         # 설치할 패키지
+        state: present                              # 없으면 깔고 있으면 냅둠
     
     - name: Verify Java installation  # 디버깅용
       command: java -version          # command모듈 사용하여 명령어 실행
@@ -15,4 +15,4 @@
    
     - name: Show Java version
       debug:                          # dubug모듈 사용하여 결과 출력
-        var: java_version.stdout      # stdout사용하여 변수값 출력
+        var: java_version.stderr      # stdout사용하여 변수값 출력
