@@ -1,0 +1,12 @@
+---
+- name: Deploy JAR File
+  hosts: webservers
+  become: yes
+
+
+  tasks:
+    - name: Upload JAR
+      copy:
+        src: ../test/myapp.jar
+        dest: /src/myapp.ar
+        mode: 0755
