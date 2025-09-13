@@ -1,7 +1,6 @@
 ---
 - name: Health Check Spring App
   hosts: webservers
-  become: true              # sudo 권한으로 실행
   vars:
     port_number: 8080
     health_endpoint: "/actuator/health"   # Spring Boot Actuator health 엔드포인트

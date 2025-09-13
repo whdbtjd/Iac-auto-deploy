@@ -1,7 +1,6 @@
 ---
 - name: Install Java in EC2
   hosts: webservers
-  become: yes                         # sudo 권한으로 실행
   
   tasks:
     - name: Install JDK17

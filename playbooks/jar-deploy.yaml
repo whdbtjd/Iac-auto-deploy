@@ -1,7 +1,6 @@
 ---
 - name: Deploy JAR File
   hosts: webservers
-  become: yes
 
 
   tasks:

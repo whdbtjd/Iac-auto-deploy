@@ -1,7 +1,6 @@
 ---
 - name: Setup Spring Boot Service
   hosts: webservers
-  become: yes
 
 
   tasks:
