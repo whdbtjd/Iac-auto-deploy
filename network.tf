@@ -132,3 +132,11 @@ resource "aws_lb" "alb" {
     Name = "alb-web"
   }
 }
+
+# ALB 타겟그룹 생성
+resource "aws_lb_target_group" "alb-tg" {
+  name       = "alb-tg"
+  port       = 8080
+  protocol   = "HTTP"
+  vpc_id     = aws_vpc.main.id
+}
