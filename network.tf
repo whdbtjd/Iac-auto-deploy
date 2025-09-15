@@ -120,9 +120,3 @@ resource "aws_route_table_association" "pri-associate-was" {
   route_table_id = aws_route_table.pri-rt[count.index].id
 }
 
-# 프라이빗 서브넷용 라우팅 테이블 연결(DB)
-resource "aws_route_table_association" "pri-associate-db" {
-  count          = length(aws_subnet.pri-sub-db)
-  subnet_id      = aws_subnet.pri-sub-db[count.index].id
-  route_table_id = aws_route_table.pri-rt[count.index].id
-}
