@@ -120,3 +120,15 @@ resource "aws_route_table_association" "pri-associate-was" {
   route_table_id = aws_route_table.pri-rt[count.index].id
 }
 
+# ALB
+resource "aws_lb" "alb" {
+  name               = "alb-web"
+  internal           = false    # vpc 외부에서 접근 허용 여부
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.sg-alb.id]
+  subnets            = aws_subnet.pub-sub[*].id
+
+  tags = {
+    Name = "alb-web"
+  }
+}
