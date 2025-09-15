@@ -41,10 +41,10 @@ resource "aws_security_group" "sg-was" {
   }
 
   ingress {
-    description = "Traffic from TargetGroup"
-    from_port   = 8080
-    to_port     = 8080
-    protocol    = "tcp"
+    description     = "Traffic from TargetGroup"
+    from_port       = 8080
+    to_port         = 8080
+    protocol        = "tcp"
     security_groups = [aws_security_group.sg-alb.id] # 출발지는 sg-alb 보안 그룹을 가진 ALB
   }
 
@@ -53,5 +53,23 @@ resource "aws_security_group" "sg-was" {
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+# DB용 보안 그룹
+resource "aws_security_group" "sg-db" {
+  name     = "db"
+  vpc_id   = aws_vpc.main.id
+
+  tags     = {
+    Name  = "sg-db"
+  }
+
+  ingress {
+    description     = "DB"
+    from_port       = 3306 
+    to_port         = 3306
+    protocol        = "tcp"
+    security_groups = [aws_security_group.sg-was.id]
   }
 }
