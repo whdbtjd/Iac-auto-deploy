@@ -5,4 +5,21 @@ resource "aws_vpc" "main" {
     Name = "Iac-vpc"
   }
 }
-  
+
+resource "aws_subnet" "pb-sub" {
+  vpc_id      = aws_vpc.main.id
+  cidr_block  = "10.0.1.0/24"
+
+  tags = {
+    Name = "pb-sub"
+  }
+}
+
+resource "aws_subnet" "pri-sub" {
+  vpc_id      = aws_vpc.main.id
+  cidr_block  = "10.0.11.0/24"
+
+  tags = {
+    Name = "pri-sub"
+  }
+}
