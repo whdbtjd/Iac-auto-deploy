@@ -1,3 +1,8 @@
+# 다중 AZ사용을 위한 data
+data "aws_availability_zones" "az" {
+  state = "available"
+}
+
 # vpc
 resource "aws_vpc" "main" {
   cidr_block = "10.0.0.0/16"
@@ -102,6 +107,4 @@ resource "aws_route_table_association" "pri-associate" {
   subnet_id      = aws_subnet.pri-sub-was.id
   route_table_id = aws_route_table.pri-rt.id
 }
-
-
 
