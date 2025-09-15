@@ -31,4 +31,27 @@ resource "aws_security_group" "sg-alb" {
   }
 }
 
+# WAS용 보안 그룹
+resource "aws_security_group" "sg-was" {
+  name     = "was"
+  vpc_id   = aws_vpc.main.id
 
+  tags     = {
+    Name = "sg-was"
+  }
+
+  ingress {
+    description = "Traffic from TargetGroup"
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    security_groups = [aws_security_group.sg-alb.id] # 출발지는 sg-alb 보안 그룹을 가진 ALB
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
