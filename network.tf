@@ -18,7 +18,7 @@ resource "aws_subnet" "pub-sub" {
 }
 
 # 프라이빗 서브넷(WAS)
-resource "aws_subnet" "pri-sub" {
+resource "aws_subnet" "pri-sub-was" {
   vpc_id      = aws_vpc.main.id
   cidr_block  = "10.0.11.0/24"
 
@@ -99,6 +99,6 @@ resource "aws_route_table_association" "pub-associate" {
 
 # 프라이빗 서브넷용 라우팅 테이블 연결
 resource "aws_route_table_association" "pri-associate" {
-  subnet_id = aws_subnet.pri-sub.id
+  subnet_id = aws_subnet.pri-sub-was.id
   route_table_id = aws_route_table.pri-rt.id
 }
