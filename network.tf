@@ -91,7 +91,7 @@ resource "aws_route_table" "pub-rt" {
   }
 }
 
-# 프라이빗 서브넷용 라우팅 테이블(WAS/DB)
+# 프라이빗 서브넷용 라우팅 테이블(WAS)
 resource "aws_route_table" "pri-rt" {
   count  = 2
   vpc_id = aws_vpc.main.id
@@ -104,7 +104,7 @@ resource "aws_route_table" "pri-rt" {
   tags = {
     Name = "pri-rt-${count.index + 1}"
   }
-}
+}  
 
 # 퍼블릭 서브넷용 라우팅 테이블 연결
 resource "aws_route_table_association" "pub-associate" {
