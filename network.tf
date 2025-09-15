@@ -1,8 +1,3 @@
-# 다중 AZ사용을 위한 data
-data "aws_availability_zones" "az" {
-  state = "available"
-}
-
 # vpc
 resource "aws_vpc" "main" {
   cidr_block = "10.0.0.0/16"
@@ -12,33 +7,44 @@ resource "aws_vpc" "main" {
   }
 }
 
+# 다중 AZ사용을 위한 data
+data "aws_availability_zones" "az" {
+  state = "available"
+}
+
 # 퍼블릭 서브넷(WEB)
 resource "aws_subnet" "pub-sub" {
-  vpc_id      = aws_vpc.main.id
-  cidr_block  = "10.0.1.0/24"
+  count             = 2
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = cidrsubnet("10.0.0.0/16", 8, count.index) # 10.0.0.0/24, 10.0.1.0/24
+  availability_zone = data.aws_availability_zones.az.names[count.index]
 
   tags = {
-    Name = "pb-sub"
+    Name = "pub-sub-${count.index + 1}"
   }
 }
 
 # 프라이빗 서브넷(WAS)
 resource "aws_subnet" "pri-sub-was" {
-  vpc_id      = aws_vpc.main.id
-  cidr_block  = "10.0.11.0/24"
+  count             = 2
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = cidrsubnet("10.0.0.0/16", 8, count.index + 10) # 10.0.10.0/24, 10.0.11.0/24
+  availability_zone = data.aws_availability_zones.az.names[count.index]
 
   tags = {
-    Name = "pri-sub-was"
+    Name = "pri-sub-was-${count.index + 1}"
   }
 }
 
 # 프라이빗 서브넷(DB)
 resource "aws_subnet" "pri-sub-db" {
-  vpc_id      = aws_vpc.main.id
-  cidr_block  = "10.0.12.0/24"
+  count             = 2
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = cidrsubnet("10.0.0.0/16", 8, count.index + 20) # 10.0.20.0/24, 10.0.21.0/24
+  availability_zone = data.aws_availability_zones.az.names[count.index]
 
   tags = {
-    Name = "pri-sub-db"
+    Name = "pri-sub-db-${count.index + 1}"
   }
 }
 
@@ -51,20 +57,23 @@ resource "aws_internet_gateway" "igw" {
   }
 }
 
-# 고정ip
+# 고정ip (NAT용)
 resource "aws_eip" "eip" {
+  count = 2
+
   tags = {
-    Name = "nat-main-eip"
+    Name = "nat-main-eip-${count.index + 1}"
   }
 }
 
 # nat
 resource "aws_nat_gateway" "nat" {
-  allocation_id = aws_eip.eip.id
-  subnet_id     = aws_subnet.pub-sub.id
+  count         = 2
+  allocation_id = aws_eip.eip[count.index].id
+  subnet_id     = aws_subnet.pub-sub[count.index].id
 
   tags = {
-    Name = "nat-main"
+    Name = "nat-main-${count.index + 1}"
   }
 }
 
@@ -82,29 +91,38 @@ resource "aws_route_table" "pub-rt" {
   }
 }
 
-# 프라이빗 서브넷용 라우팅 테이블(WAS)
+# 프라이빗 서브넷용 라우팅 테이블(WAS/DB)
 resource "aws_route_table" "pri-rt" {
+  count  = 2
   vpc_id = aws_vpc.main.id
 
   route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_nat_gateway.nat.id
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.nat[count.index].id
   }
 
   tags = {
-    Name = "pri-rt"
+    Name = "pri-rt-${count.index + 1}"
   }
 }
 
 # 퍼블릭 서브넷용 라우팅 테이블 연결
 resource "aws_route_table_association" "pub-associate" {
-  subnet_id      = aws_subnet.pub-sub.id
+  count          = length(aws_subnet.pub-sub)
+  subnet_id      = aws_subnet.pub-sub[count.index].id
   route_table_id = aws_route_table.pub-rt.id
 }
 
-# 프라이빗 서브넷용 라우팅 테이블 연결
-resource "aws_route_table_association" "pri-associate" {
-  subnet_id      = aws_subnet.pri-sub-was.id
-  route_table_id = aws_route_table.pri-rt.id
+# 프라이빗 서브넷용 라우팅 테이블 연결(WAS)
+resource "aws_route_table_association" "pri-associate-was" {
+  count          = length(aws_subnet.pri-sub-was)
+  subnet_id      = aws_subnet.pri-sub-was[count.index].id
+  route_table_id = aws_route_table.pri-rt[count.index].id
 }
 
+# 프라이빗 서브넷용 라우팅 테이블 연결(DB)
+resource "aws_route_table_association" "pri-associate-db" {
+  count          = length(aws_subnet.pri-sub-db)
+  subnet_id      = aws_subnet.pri-sub-db[count.index].id
+  route_table_id = aws_route_table.pri-rt[count.index].id
+}
