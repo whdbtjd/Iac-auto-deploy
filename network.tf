@@ -7,7 +7,7 @@ resource "aws_vpc" "main" {
   }
 }
 
-# 퍼블릭 서브넷
+# 퍼블릭 서브넷(WEB)
 resource "aws_subnet" "pub-sub" {
   vpc_id      = aws_vpc.main.id
   cidr_block  = "10.0.1.0/24"
@@ -93,12 +93,45 @@ resource "aws_route_table" "pri-rt" {
 
 # 퍼블릭 서브넷용 라우팅 테이블 연결
 resource "aws_route_table_association" "pub-associate" {
-  subnet_id = aws_subnet.pub-sub.id
+  subnet_id      = aws_subnet.pub-sub.id
   route_table_id = aws_route_table.pub-rt.id
 }
 
 # 프라이빗 서브넷용 라우팅 테이블 연결
 resource "aws_route_table_association" "pri-associate" {
-  subnet_id = aws_subnet.pri-sub-was.id
+  subnet_id      = aws_subnet.pri-sub-was.id
   route_table_id = aws_route_table.pri-rt.id
+}
+
+# ALB용 보안 그룹
+resource "aws_security_group" "sg-alb" {
+  name      = "alb"
+  vpc_id    = aws_vpc.main.id
+
+  tags      = {
+    Name = "sg-alb"
+  }
+
+  ingress {
+    description   = "Allow HTTP"
+    from_port     = 80
+    to_port       = 80
+    protocol      = "tcp"
+    cidr_blocks   = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description   = "Allow HTTPS"
+    from_port     = 443
+    to_port       = 443
+    protocol      = "tcp"
+    cidr_blocks   = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }
