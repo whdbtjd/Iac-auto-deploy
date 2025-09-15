@@ -31,3 +31,9 @@ resource "aws_internet_gateway" "igw" {
     Name = "main"
   }
 }
+
+resource "aws_eip" "eip" {
+  tags = {
+    Name = "nat-main-eip"
+  }
+}
