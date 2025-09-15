@@ -38,11 +38,37 @@ resource "aws_eip" "eip" {
   }
 }
 
-resource "aws_nat_gateway" "nat-main" {
+resource "aws_nat_gateway" "nat" {
   allocation_id = aws_eip.eip.id
   subnet_id     = aws_subnet.pub-sub.id
 
   tags = {
     Name = "nat-main"
+  }
+}
+
+resource "aws_route_table" "pub-rt" {
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.igw.id
+  }
+
+  tags = {
+    Name = "pub-rt"
+  }
+}
+
+resource "aws_route_table" "pri-rt" {
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_nat_gateway.nat.id
+  }
+
+  tags = {
+    Name = "pri-rt"
   }
 }
