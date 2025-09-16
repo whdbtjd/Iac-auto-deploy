@@ -24,3 +24,13 @@ resource "aws_s3_bucket_website_configuration" "s3-web-config" {
     key = "index.html"
   }
 }
+
+# 퍼블릭 액세스 차단 해제
+resource "aws_s3_bucket_public_access_block" "s3-web-unblock" {
+  bucket = aws_s3_bucket.s3-web.id
+
+  block_public_acls       = false
+  block_public_policy     = false
+  ignore_public_acls      = false
+  restrict_public_buckets = false
+}
