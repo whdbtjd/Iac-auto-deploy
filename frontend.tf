@@ -11,3 +11,16 @@ resource "aws_s3_bucket" "s3-web" {
      Name = "frontend-web"
  }
 }
+
+# 정적 웹사이트 호스팅 설정
+resource "aws_s3_bucket_website_configuration" "s3-web-config" {
+  bucket = aws_s3_bucket.s3-web.id
+
+  index_document {
+    suffix = "index.html"
+  }
+
+  error_document {
+    key = "index.html"
+  }
+}
