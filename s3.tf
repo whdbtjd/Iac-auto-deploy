@@ -5,40 +5,32 @@ resource "random_id" "bucket_suffix" {
 
 # S3 버킷 생성
 resource "aws_s3_bucket" "s3-web" {
-   bucket = "frontend-web-${random_id.bucket_suffix.hex}"
-   
-   tags = {
-     Name = "frontend-web"
- }
+  bucket = "frontend-web-${random_id.bucket_suffix.hex}"
+  
+  tags = {
+    Name = "frontend-web"
+  }
 }
 
 # 정적 웹사이트 호스팅 설정
 resource "aws_s3_bucket_website_configuration" "s3-web-config" {
   bucket = aws_s3_bucket.s3-web.id
-
+  
   index_document {
     suffix = "index.html"
   }
-
+  
   error_document {
     key = "index.html"
   }
 }
 
-# 퍼블릭 액세스 차단 해제
-resource "aws_s3_bucket_public_access_block" "s3-web-unblock" {
-  bucket = aws_s3_bucket.s3-web.id
-
-  block_public_acls       = false
-  block_public_policy     = false
-  ignore_public_acls      = false
-  restrict_public_buckets = false
-}
-
-# CloudFront용 OAC (Origin Access Control)
+# S3 버킷 정책
 resource "aws_s3_bucket_policy" "web" {
   bucket = aws_s3_bucket.s3-web.id
-
+  
+  depends_on = [aws_cloudfront_distribution.web]  # 명시적 종속성
+  
   policy = jsonencode({
     Statement = [
       {
@@ -56,4 +48,14 @@ resource "aws_s3_bucket_policy" "web" {
       }
     ]
   })
+}
+
+# CloudFront 사용 시 퍼블릭 액세스는 차단
+resource "aws_s3_bucket_public_access_block" "s3-web-unblock" {
+  bucket = aws_s3_bucket.s3-web.id
+
+  block_public_acls       = true   # CloudFront 사용 시 차단
+  block_public_policy     = false  # CloudFront 정책 허용
+  ignore_public_acls      = true   # CloudFront 사용 시 차단
+  restrict_public_buckets = false  # CloudFront 정책 허용
 }
