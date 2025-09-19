@@ -8,6 +8,8 @@ resource "aws_instance" "ec2-1" {
 
   vpc_security_group_ids = [ aws_security_group.sg-was.id ]
 
+  iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
+
   tags = {
     Name = "was-instance-1"
   }
@@ -22,6 +24,8 @@ resource "aws_instance" "ec2-2" {
   subnet_id     = aws_subnet.pri-sub-was[1].id
 
   vpc_security_group_ids = [ aws_security_group.sg-was.id ]
+
+  iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
 
   tags = {
     Name = "was-instance-2"
