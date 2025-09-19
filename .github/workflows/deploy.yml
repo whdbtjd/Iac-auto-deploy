@@ -1,0 +1,236 @@
+name: Auto Deploy Pipeline
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # 수동 실행 가능
+
+env:
+  AWS_REGION: ap-northeast-2
+
+jobs:
+  # 변경사항 감지
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.changes.outputs.backend }}
+      frontend: ${{ steps.changes.outputs.frontend }}
+      terraform: ${{ steps.changes.outputs.terraform }}
+      ansible: ${{ steps.changes.outputs.ansible }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+            frontend:
+              - 'frontend/**'
+            terraform:
+              - 'terraform/**'
+            ansible:
+              - 'ansible/**'
+
+  # 인프라 배포 (가장 먼저 실행)
+  deploy-infrastructure:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.terraform == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      ec2-ip: ${{ steps.terraform.outputs.ec2-ip }}
+      s3-bucket: ${{ steps.terraform.outputs.s3-bucket }}
+      cloudfront-url: ${{ steps.terraform.outputs.cloudfront-url }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.0
+          terraform_wrapper: false
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform Init
+        working-directory: ./terraform
+        run: terraform init
+
+      - name: Terraform Plan
+        working-directory: ./terraform
+        run: terraform plan -no-color
+
+      - name: Terraform Apply
+        working-directory: ./terraform
+        run: terraform apply -auto-approve -no-color
+
+      - name: Get Terraform Outputs
+        id: terraform
+        working-directory: ./terraform
+        run: |
+          echo "ec2-ip=$(terraform output -raw ec2_public_ip)" >> $GITHUB_OUTPUT
+          echo "s3-bucket=$(terraform output -raw s3_bucket_name)" >> $GITHUB_OUTPUT
+          echo "cloudfront-url=$(terraform output -raw cloudfront_domain_name)" >> $GITHUB_OUTPUT
+          echo "db-endpoint=$(terraform output -raw rds_endpoint)" >> $GITHUB_OUTPUT
+
+  # 서버 설정 (Ansible)
+  setup-servers:
+    needs: [detect-changes, deploy-infrastructure]
+    if: |
+      always() && 
+      (needs.detect-changes.outputs.ansible == 'true' || 
+       needs.detect-changes.outputs.terraform == 'true')
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install Ansible
+        run: |
+          pip install ansible boto3
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ needs.deploy-infrastructure.outputs.ec2-ip }} >> ~/.ssh/known_hosts
+
+      - name: Update inventory with EC2 IP
+        working-directory: ./ansible
+        run: |
+          sed -i "s/EC2_IP_PLACEHOLDER/${{ needs.deploy-infrastructure.outputs.ec2-ip }}/g" inventory.ini
+
+      - name: Run Ansible playbook
+        working-directory: ./ansible
+        run: |
+          ansible-playbook -i inventory.ini playbooks/setup-service.yml
+
+  # 백엔드 빌드 및 배포
+  deploy-backend:
+    needs: [detect-changes, deploy-infrastructure, setup-servers]
+    if: |
+      always() && 
+      needs.detect-changes.outputs.backend == 'true' &&
+      needs.setup-servers.result == 'success'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Build with Gradle
+        working-directory: ./backend
+        run: |
+          chmod +x gradlew
+          ./gradlew build -x test
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+      - name: Deploy JAR to EC2
+        run: |
+          # 환경변수 파일 생성
+          echo "DATABASE_URL=jdbc:postgresql://${{ needs.deploy-infrastructure.outputs.db-endpoint }}:5432/voting_db" > app.env
+          echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> app.env
+          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> app.env
+    
+          # 파일 전송
+          scp -o StrictHostKeyChecking=no app.env ubuntu@${{ needs.deploy-infrastructure.outputs.ec2-ip }}:/home/ubuntu/
+          scp -o StrictHostKeyChecking=no backend/build/libs/*.jar ubuntu@${{ needs.deploy-infrastructure.outputs.ec2-ip }}:/home/ubuntu/app.jar
+
+  # 프론트엔드 빌드 및 배포
+  deploy-frontend:
+    needs: [detect-changes, deploy-infrastructure]
+    if: |
+      always() && 
+      needs.detect-changes.outputs.frontend == 'true' &&
+      needs.deploy-infrastructure.result == 'success'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: ./frontend
+        env:
+          VITE_API_URL: https://${{ needs.deploy-infrastructure.outputs.cloudfront-url }}/api
+        run: npm run build
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy to S3
+        run: |
+          aws s3 sync frontend/dist/ s3://${{ needs.deploy-infrastructure.outputs.s3-bucket }}/ --delete
+
+      - name: Invalidate CloudFront
+        run: |
+          DISTRIBUTION_ID=$(aws cloudfront list-distributions \
+            --query "DistributionList.Items[?Comment=='Voting System Frontend'].Id" \
+            --output text)
+          aws cloudfront create-invalidation \
+            --distribution-id $DISTRIBUTION_ID \
+            --paths "/*"
+
+  # 배포 완료 알림
+  deployment-complete:
+    needs: [detect-changes, deploy-infrastructure, setup-servers, deploy-backend, deploy-frontend]
+    if: always()
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Deployment Summary
+        run: |
+          echo "��� 배포 완료!"
+          echo "��� Frontend URL: https://${{ needs.deploy-infrastructure.outputs.cloudfront-url }}"
+          echo "��� Backend API: http://${{ needs.deploy-infrastructure.outputs.ec2-ip }}:8080/api"
+          echo ""
+          echo "��� 배포 상태:"
+          echo "- 인프라: ${{ needs.deploy-infrastructure.result }}"
+          echo "- 서버설정: ${{ needs.setup-servers.result }}"  
+          echo "- 백엔드: ${{ needs.deploy-backend.result }}"
+          echo "- 프론트엔드: ${{ needs.deploy-frontend.result }}"
