@@ -1,0 +1,29 @@
+---
+- name: Setup Spring Boot Service
+  hosts: webservers
+
+
+  tasks:
+    - name: Create systemd service file                  # systemd 서비스 파일 직접 구성
+      copy:
+        content:  |
+          [Unit]
+          Description=Spring Boot Application          # 서비스 설명
+
+          [Service]
+          ExecStart=/usr/bin/java -jar /src/myapp.jar  # 실행 명령 (src는 호스트 경로)
+          User=ec2-user
+
+          [Install]
+          WantedBy=multi-user.target                   # 부팅시 자동 시작하게
+        dest: /etc/systemd/system/myapp.service          # 서비스 파일 저장 위치
+        
+    - name: Reload systemd daemon                        # systemd 데몬 리로드
+      systemd:
+        daemon_reload: yes                               # 새 서비스 파일 인식
+
+    - name: Start and enable service                     # 서비스 시작 및 활성화
+      systemd:
+        name: myapp                                      # 서비스 명
+        state: started                                   # 즉시 시작
+        enabled: yes                                     # 부팅시 자동 시작 활성화

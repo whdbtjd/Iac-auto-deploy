@@ -1,0 +1,6 @@
+---
+- import_playbook: java-setup.yaml
+- import_playbook: jar-deploy.yaml
+- import_playbook: db-config.yaml # Terraform으로 db생성 후 실행 해야 함
+- import_playbook: setup-service.yaml
+- import_playbook: health-check.yaml

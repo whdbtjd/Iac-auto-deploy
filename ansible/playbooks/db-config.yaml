@@ -1,0 +1,21 @@
+---
+- name: DB configuration
+  hosts: webservers
+  vars:
+    rds_endpoint: "{{ rds_host }}" # Terraform에서 생성 후 CI/CD로 전달 받아야 함
+    database_name: "{{ db_name | default('myapp') }}"
+    db_username: "{{ db_user | default('admin') }}"
+    db_password: "{{ db_password }}" # 위와 같음
+
+  tasks:
+    - name: Create config diretory
+      file:
+        path: /opt/config
+        state: directory
+        mode: '0755'
+
+    - name: Deploy application.yml
+      template:
+        src: templates/application.yaml.j2 # 플레이북이 있는 상대 경로 기준
+        dest: /opt/config/application.yml
+        mode: '0644'

@@ -1,0 +1,37 @@
+---
+- name: Health Check Spring App
+  hosts: webservers
+  vars:
+    port_number: 8080
+    health_endpoint: "/actuator/health"   # Spring Boot Actuator health 엔드포인트
+
+  tasks:
+    - name: Check application health
+      uri:
+        url: "http://{{ansible_host}}:{{port_number}}{{health_endpoint}}"
+        method: GET
+        status_code: [200, 404, 502, 503]   # 허용할 상태코드 목록 (이외는 실패로 처리)
+        timeout: 10                         # 요청 타임아웃 (초 단위)
+        return_content: yes                 # HTTP 응답 body까지 가져옴
+      register: health_result               # 결과를 health_result 변수에 저장
+      failed_when: false                    # 어떤 상태코드가 와도 실패로 간주하지 않음
+
+    - name: Show health status
+      debug:
+        msg: |                              # Jinja2 템플릿으로 조건 분기
+          {% if health_result.status == 200 %}
+          Application is healthy!           # 상태코드 200 → 정상
+          Response: {{ health_result.content }}
+          {% elif health_result.status == 404 %}
+          Health endpoint not found         # 엔드포인트 없음
+          {% elif health_result.status in [502, 503] %}
+          Application is down               # 서버는 켜져있지만 앱은 다운
+          {% else %}
+          Unknown status: {{ health_result.status }}   # 예외 처리
+          {% endif %}
+
+    - name: Show response body (if available)
+      debug:
+        var: health_result.content          # 응답 body 전체 출력
+      when: health_result.content is defined   # content가 정의된 경우에만 실행
+
