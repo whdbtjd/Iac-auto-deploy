@@ -30,3 +30,16 @@ resource "aws_lb_listener" "alb-listner" {
     target_group_arn  = aws_lb_target_group.alb-tg.arn
   }
 }
+
+# EC2 인스턴스들을 ALB 타겟 그룹에 연결
+resource "aws_lb_target_group_attachment" "ec2-1" {
+  target_group_arn = aws_lb_target_group.alb-tg.arn
+  target_id        = aws_instance.ec2-1.id
+  port             = 8080
+}
+
+resource "aws_lb_target_group_attachment" "ec2-2" {
+  target_group_arn = aws_lb_target_group.alb-tg.arn
+  target_id        = aws_instance.ec2-2.id
+  port             = 8080
+}
