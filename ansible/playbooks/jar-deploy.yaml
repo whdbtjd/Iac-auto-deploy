@@ -2,10 +2,39 @@
 - name: Deploy JAR File
   hosts: webservers
 
-
   tasks:
-    - name: Upload JAR
-      copy:
-        src: ../test/myapp.jar
-        dest: /src/myapp.jar
-        mode: 0755
+    - name: Stop voting-app service
+      systemd:
+        name: voting-app
+        state: stopped
+      failed_when: false
+
+    - name: Wait for service to stop
+      wait_for:
+        timeout: 10
+
+    - name: Check if JAR file exists
+      stat:
+        path: /opt/app/app.jar
+      register: jar_file
+
+    - name: Fail if JAR file not found
+      fail:
+        msg: "JAR file not found at /opt/app/app.jar. Please ensure SSM deployment completed successfully."
+      when: not jar_file.stat.exists
+
+    - name: Start voting-app service
+      systemd:
+        name: voting-app
+        state: started
+        enabled: yes
+      when: jar_file.stat.exists
+
+    - name: Verify service is running
+      systemd:
+        name: voting-app
+      register: service_status
+
+    - name: Show service status
+      debug:
+        msg: "Service status: {{ service_status.status.ActiveState }}"

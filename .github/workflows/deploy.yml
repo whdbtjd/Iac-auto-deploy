@@ -37,7 +37,7 @@ jobs:
             ansible:
               - 'ansible/**'
 
-  # 인프라 배포 (스마트 배포)
+  # 인프라 배포 (조건부 타겟팅)
   deploy-infrastructure:
     needs: detect-changes
     if: |
@@ -49,6 +49,8 @@ jobs:
     outputs:
       ec2-id-1: ${{ steps.terraform.outputs.ec2-id-1 }}
       ec2-id-2: ${{ steps.terraform.outputs.ec2-id-2 }}
+      ec2-private-ip-1: ${{ steps.terraform.outputs.ec2-private-ip-1 }}
+      ec2-private-ip-2: ${{ steps.terraform.outputs.ec2-private-ip-2 }}
       alb-dns: ${{ steps.terraform.outputs.alb-dns }}
       s3-bucket: ${{ steps.terraform.outputs.s3-bucket }}
       cloudfront-url: ${{ steps.terraform.outputs.cloudfront-url }}
@@ -184,26 +186,36 @@ jobs:
         id: terraform
         working-directory: ./terraform
         run: |
-          # EC2 인스턴스 ID들 가져오기
+          # EC2 인스턴스 ID들과 Private IP들 가져오기
           EC2_IDS=$(terraform output -json ec2_instance_ids)
+          EC2_PRIVATE_IPS=$(terraform output -json ec2_private_ips)
+          
           EC2_ID_1=$(echo $EC2_IDS | jq -r '.[0]')
           EC2_ID_2=$(echo $EC2_IDS | jq -r '.[1]')
-          
-          # ALB DNS 이름 가져오기 (실제 API 엔드포인트)
-          ALB_DNS=$(aws elbv2 describe-load-balancers --query 'LoadBalancers[0].DNSName' --output text)
+          EC2_PRIVATE_IP_1=$(echo $EC2_PRIVATE_IPS | jq -r '.[0]')
+          EC2_PRIVATE_IP_2=$(echo $EC2_PRIVATE_IPS | jq -r '.[1]')
           
           echo "ec2-id-1=$EC2_ID_1" >> $GITHUB_OUTPUT
           echo "ec2-id-2=$EC2_ID_2" >> $GITHUB_OUTPUT
+          echo "ec2-private-ip-1=$EC2_PRIVATE_IP_1" >> $GITHUB_OUTPUT
+          echo "ec2-private-ip-2=$EC2_PRIVATE_IP_2" >> $GITHUB_OUTPUT
+          
+          # ALB DNS 이름 가져오기
+          ALB_DNS=$(aws elbv2 describe-load-balancers --query 'LoadBalancers[0].DNSName' --output text)
           echo "alb-dns=$ALB_DNS" >> $GITHUB_OUTPUT
+          
+          # S3 버킷과 DB 엔드포인트
           echo "s3-bucket=$(terraform output -raw s3_bucket_name || echo '')" >> $GITHUB_OUTPUT
           echo "db-endpoint=$(terraform output -raw rds_endpoint || echo '')" >> $GITHUB_OUTPUT
           
-          # CloudFront 도메인 가져오기 (S3 버킷 기반으로 찾기)
-          S3_BUCKET=$(terraform output -raw s3_bucket_name)
-          CLOUDFRONT_URL=$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[0].DomainName=='$S3_BUCKET.s3.amazonaws.com'].DomainName" --output text)
-          echo "cloudfront-url=$CLOUDFRONT_URL" >> $GITHUB_OUTPUT
+          # CloudFront 도메인 가져오기
+          S3_BUCKET=$(terraform output -raw s3_bucket_name || echo '')
+          if [ -n "$S3_BUCKET" ]; then
+            CLOUDFRONT_URL=$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[0].DomainName=='$S3_BUCKET.s3.amazonaws.com'].DomainName" --output text)
+            echo "cloudfront-url=$CLOUDFRONT_URL" >> $GITHUB_OUTPUT
+          fi
 
-  # 서버 설정 (SSM 사용)
+  # 서버 설정 (Ansible + SSM ProxyCommand)
   setup-servers:
     needs: [detect-changes, deploy-infrastructure]
     if: |
@@ -219,6 +231,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install Ansible and AWS CLI Session Manager Plugin
+        run: |
+          pip install ansible boto3
+          # AWS CLI Session Manager Plugin 설치
+          curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o "session-manager-plugin.deb"
+          sudo dpkg -i session-manager-plugin.deb
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -229,33 +253,38 @@ jobs:
       - name: Wait for EC2 instances to be ready
         run: |
           echo "Waiting for EC2 instances to be ready for SSM..."
-          sleep 60
+          sleep 120
 
-      - name: Setup MySQL client and create database
+      - name: Create Ansible inventory with SSM ProxyCommand
+        working-directory: ./ansible
         run: |
-          # 첫 번째 인스턴스에서 MySQL 클라이언트 설치 및 DB 생성
-          COMMAND_ID=$(aws ssm send-command \
-            --instance-ids ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }} \
-            --document-name "AWS-RunShellScript" \
-            --parameters 'commands=["sudo yum install -y mysql","mysql -h ${{ needs.deploy-infrastructure.outputs.db-endpoint }} -u ${{ secrets.DB_USERNAME }} -p${{ secrets.DB_PASSWORD }} -e \"CREATE DATABASE IF NOT EXISTS voting_db;\""]' \
-            --query 'Command.CommandId' --output text)
+          cat > inventory.ini << EOF
+          [webservers]
+          web1 ansible_host=${{ needs.deploy-infrastructure.outputs.ec2-private-ip-1 }} ansible_user=ec2-user
+          web2 ansible_host=${{ needs.deploy-infrastructure.outputs.ec2-private-ip-2 }} ansible_user=ec2-user
           
-          # 명령 완료 대기
-          aws ssm wait command-executed --command-id $COMMAND_ID --instance-id ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }}
+          [webservers:vars]
+          ansible_ssh_common_args='-o ProxyCommand="aws ssm start-session --target %h --document-name AWS-StartSSHSession --parameters portNumber=%p"'
+          ansible_ssh_private_key_file=/dev/null
+          ansible_ssh_extra_args='-o StrictHostKeyChecking=no'
+          EOF
 
-      - name: Create application directories
+      - name: Test Ansible connectivity
+        working-directory: ./ansible
         run: |
-          # 두 인스턴스에 애플리케이션 디렉토리 생성
-          COMMAND_ID=$(aws ssm send-command \
-            --instance-ids ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }} ${{ needs.deploy-infrastructure.outputs.ec2-id-2 }} \
-            --document-name "AWS-RunShellScript" \
-            --parameters 'commands=["sudo mkdir -p /opt/app","sudo chown ec2-user:ec2-user /opt/app","sudo mkdir -p /opt/config","sudo chown ec2-user:ec2-user /opt/config"]' \
-            --query 'Command.CommandId' --output text)
-          
-          # 명령 완료 대기  
-          aws ssm wait command-executed --command-id $COMMAND_ID --instance-id ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }}
+          ansible webservers -i inventory.ini -m ping
 
-  # 백엔드 빌드 및 배포 (SSM 사용)
+      - name: Run Ansible setup playbook
+        working-directory: ./ansible
+        run: |
+          ansible-playbook -i inventory.ini playbooks/setup-service.yaml \
+            -e "rds_host=${{ needs.deploy-infrastructure.outputs.db-endpoint }}" \
+            -e "db_user=${{ secrets.DB_USERNAME }}" \
+            -e "db_password=${{ secrets.DB_PASSWORD }}" \
+            -e "db_name=voting_db" \
+            -v
+
+  # 백엔드 빌드 및 배포 (Ansible + SSM)
   deploy-backend:
     needs: [detect-changes, deploy-infrastructure, setup-servers]
     if: |
@@ -280,6 +309,18 @@ jobs:
           chmod +x gradlew
           ./gradlew build -x test
 
+      - name: Setup Python and Ansible
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install ansible boto3
+          # AWS CLI Session Manager Plugin 설치
+          curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o "session-manager-plugin.deb"
+          sudo dpkg -i session-manager-plugin.deb
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -288,8 +329,9 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Create application.yml
+        working-directory: ./ansible/templates
         run: |
-          cat > application.yml << EOF
+          cat > application.yaml.j2 << EOF
           spring:
             datasource:
               url: jdbc:mysql://${{ needs.deploy-infrastructure.outputs.db-endpoint }}:3306/voting_db
@@ -301,6 +343,8 @@ jobs:
                 ddl-auto: update
               show-sql: false
               database-platform: org.hibernate.dialect.MySQLDialect
+            application:
+              name: voting-system
           server:
             port: 8080
           management:
@@ -319,27 +363,38 @@ jobs:
               name: /opt/app/voting-app.log
           EOF
 
-      - name: Upload JAR and config to S3 (temporary storage)
+      - name: Prepare JAR file for Ansible
+        working-directory: ./ansible
         run: |
-          # S3에 임시로 업로드
-          aws s3 cp backend/build/libs/*.jar s3://${{ needs.deploy-infrastructure.outputs.s3-bucket }}/deploy/app.jar
-          aws s3 cp application.yml s3://${{ needs.deploy-infrastructure.outputs.s3-bucket }}/deploy/application.yml
+          mkdir -p files
+          cp ../backend/build/libs/*.jar files/app.jar
 
-      - name: Deploy to EC2 instances via SSM
+      - name: Recreate Ansible inventory
+        working-directory: ./ansible
         run: |
-          # 두 인스턴스에 동시 배포
-          COMMAND_ID=$(aws ssm send-command \
-            --instance-ids ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }} ${{ needs.deploy-infrastructure.outputs.ec2-id-2 }} \
-            --document-name "AWS-RunShellScript" \
-            --parameters 'commands=["cd /opt/app","sudo pkill -f \"java.*app.jar\" || true","aws s3 cp s3://${{ needs.deploy-infrastructure.outputs.s3-bucket }}/deploy/app.jar /opt/app/app.jar","aws s3 cp s3://${{ needs.deploy-infrastructure.outputs.s3-bucket }}/deploy/application.yml /opt/config/application.yml","nohup java -jar /opt/app/app.jar --spring.config.location=/opt/config/application.yml > /opt/app/app.log 2>&1 &","sleep 10","if pgrep -f \"java.*app.jar\"; then echo \"✅ Application started successfully\"; else echo \"❌ Application failed to start\"; tail -20 /opt/app/app.log; exit 1; fi"]' \
-            --query 'Command.CommandId' --output text)
+          cat > inventory.ini << EOF
+          [webservers]
+          web1 ansible_host=${{ needs.deploy-infrastructure.outputs.ec2-private-ip-1 }} ansible_user=ec2-user
+          web2 ansible_host=${{ needs.deploy-infrastructure.outputs.ec2-private-ip-2 }} ansible_user=ec2-user
           
-          # 명령 완료 대기
-          aws ssm wait command-executed --command-id $COMMAND_ID --instance-id ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }}
+          [webservers:vars]
+          ansible_ssh_common_args='-o ProxyCommand="aws ssm start-session --target %h --document-name AWS-StartSSHSession --parameters portNumber=%p"'
+          ansible_ssh_private_key_file=/dev/null
+          ansible_ssh_extra_args='-o StrictHostKeyChecking=no'
+          EOF
 
-      - name: Cleanup temporary files
+      - name: Deploy JAR via Ansible
+        working-directory: ./ansible
         run: |
-          aws s3 rm s3://${{ needs.deploy-infrastructure.outputs.s3-bucket }}/deploy/ --recursive
+          ansible-playbook -i inventory.ini playbooks/jar-deploy.yaml \
+            -e "jar_file=files/app.jar" \
+            -e "app_path=/opt/app" \
+            -v
+
+      - name: Start application via Ansible
+        working-directory: ./ansible
+        run: |
+          ansible-playbook -i inventory.ini playbooks/start-app.yaml -v
 
       - name: Health check via ALB
         run: |
@@ -349,7 +404,7 @@ jobs:
           # ALB를 통한 헬스체크
           for i in {1..10}; do
             if curl -f "http://${{ needs.deploy-infrastructure.outputs.alb-dns }}/actuator/health"; then
-              echo "✅ Application is healthy via ALB!"
+              echo "Application is healthy via ALB!"
               break
             else
               echo "Attempt $i failed, retrying in 10 seconds..."
@@ -357,7 +412,7 @@ jobs:
             fi
           done
 
-  # 프론트엔드 빌드 및 배포 (프론트엔드 변경시에만)
+  # 프론트엔드 빌드 및 배포
   deploy-frontend:
     needs: [detect-changes, deploy-infrastructure]
     if: |
@@ -400,7 +455,6 @@ jobs:
 
       - name: Invalidate CloudFront
         run: |
-          # S3 버킷의 regional domain name으로 CloudFront 배포 ID 찾기
           S3_BUCKET_DOMAIN="${{ needs.deploy-infrastructure.outputs.s3-bucket }}.s3.amazonaws.com"
           DISTRIBUTION_ID=$(aws cloudfront list-distributions \
             --query "DistributionList.Items[?Origins.Items[0].DomainName=='$S3_BUCKET_DOMAIN'].Id" \
@@ -424,15 +478,15 @@ jobs:
     steps:
       - name: Deployment Summary
         run: |
-          echo "🚀 배포 완료!"
+          echo "배포 완료!"
           echo ""
-          echo "📋 변경 감지 결과:"
+          echo "변경 감지 결과:"
           echo "- Backend: ${{ needs.detect-changes.outputs.backend }}"
           echo "- Frontend: ${{ needs.detect-changes.outputs.frontend }}"
           echo "- Terraform: ${{ needs.detect-changes.outputs.terraform }}"
           echo "- Ansible: ${{ needs.detect-changes.outputs.ansible }}"
           echo ""
-          echo "🌐 서비스 URL:"
+          echo "서비스 URL:"
           if [ -n "${{ needs.deploy-infrastructure.outputs.cloudfront-url }}" ]; then
             echo "- Frontend: https://${{ needs.deploy-infrastructure.outputs.cloudfront-url }}"
           fi
@@ -440,7 +494,7 @@ jobs:
             echo "- Backend API: http://${{ needs.deploy-infrastructure.outputs.alb-dns }}/api"
           fi
           echo ""
-          echo "📊 배포 상태:"
+          echo "배포 상태:"
           echo "- 인프라: ${{ needs.deploy-infrastructure.result }}"
           echo "- 서버설정: ${{ needs.setup-servers.result }}"  
           echo "- 백엔드: ${{ needs.deploy-backend.result }}"
