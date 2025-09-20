@@ -184,23 +184,27 @@ jobs:
         run: |
           EC2_IDS=$(terraform output -json ec2_instance_ids)
           EC2_PRIVATE_IPS=$(terraform output -json ec2_private_ips)
-          
+        
           EC2_ID_1=$(echo $EC2_IDS | jq -r '.[0]')
           EC2_ID_2=$(echo $EC2_IDS | jq -r '.[1]')
           EC2_PRIVATE_IP_1=$(echo $EC2_PRIVATE_IPS | jq -r '.[0]')
           EC2_PRIVATE_IP_2=$(echo $EC2_PRIVATE_IPS | jq -r '.[1]')
-          
+        
           echo "ec2-id-1=$EC2_ID_1" >> $GITHUB_OUTPUT
           echo "ec2-id-2=$EC2_ID_2" >> $GITHUB_OUTPUT
           echo "ec2-private-ip-1=$EC2_PRIVATE_IP_1" >> $GITHUB_OUTPUT
           echo "ec2-private-ip-2=$EC2_PRIVATE_IP_2" >> $GITHUB_OUTPUT
-          
+        
           ALB_DNS=$(aws elbv2 describe-load-balancers --query 'LoadBalancers[0].DNSName' --output text)
           echo "alb-dns=$ALB_DNS" >> $GITHUB_OUTPUT
-          
+        
           echo "s3-bucket=$(terraform output -raw s3_bucket_name || echo '')" >> $GITHUB_OUTPUT
-          echo "db-endpoint=$(terraform output -raw rds_endpoint || echo '')" >> $GITHUB_OUTPUT
-          
+        
+          # RDS endpoint에서 포트 제거
+          RDS_ENDPOINT_RAW=$(terraform output -raw rds_endpoint || echo '')
+          RDS_ENDPOINT=$(echo $RDS_ENDPOINT_RAW | cut -d':' -f1)
+          echo "db-endpoint=$RDS_ENDPOINT" >> $GITHUB_OUTPUT
+        
           S3_BUCKET=$(terraform output -raw s3_bucket_name || echo '')
           if [ -n "$S3_BUCKET" ]; then
             CLOUDFRONT_URL=$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[0].DomainName=='$S3_BUCKET.s3.amazonaws.com'].DomainName" --output text)
