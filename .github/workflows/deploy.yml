@@ -229,34 +229,31 @@ jobs:
       - name: Wait for EC2 instances to be ready
         run: |
           echo "Waiting for EC2 instances to be ready for SSM..."
-          aws ssm wait command-executed --instance-ids ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }} ${{ needs.deploy-infrastructure.outputs.ec2-id-2 }} || true
-          sleep 30
+          sleep 60
 
       - name: Setup MySQL client and create database
         run: |
           # 첫 번째 인스턴스에서 MySQL 클라이언트 설치 및 DB 생성
-          aws ssm send-command \
+          COMMAND_ID=$(aws ssm send-command \
             --instance-ids ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }} \
             --document-name "AWS-RunShellScript" \
-            --parameters 'commands=[
-              "sudo yum install -y mysql",
-              "mysql -h ${{ needs.deploy-infrastructure.outputs.db-endpoint }} -u ${{ secrets.DB_USERNAME }} -p${{ secrets.DB_PASSWORD }} -e \"CREATE DATABASE IF NOT EXISTS voting_db;\""
-            ]' \
-            --wait-for-completion
+            --parameters 'commands=["sudo yum install -y mysql","mysql -h ${{ needs.deploy-infrastructure.outputs.db-endpoint }} -u ${{ secrets.DB_USERNAME }} -p${{ secrets.DB_PASSWORD }} -e \"CREATE DATABASE IF NOT EXISTS voting_db;\""]' \
+            --query 'Command.CommandId' --output text)
+          
+          # 명령 완료 대기
+          aws ssm wait command-executed --command-id $COMMAND_ID --instance-id ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }}
 
       - name: Create application directories
         run: |
           # 두 인스턴스에 애플리케이션 디렉토리 생성
-          aws ssm send-command \
+          COMMAND_ID=$(aws ssm send-command \
             --instance-ids ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }} ${{ needs.deploy-infrastructure.outputs.ec2-id-2 }} \
             --document-name "AWS-RunShellScript" \
-            --parameters 'commands=[
-              "sudo mkdir -p /opt/app",
-              "sudo chown ec2-user:ec2-user /opt/app",
-              "sudo mkdir -p /opt/config", 
-              "sudo chown ec2-user:ec2-user /opt/config"
-            ]' \
-            --wait-for-completion
+            --parameters 'commands=["sudo mkdir -p /opt/app","sudo chown ec2-user:ec2-user /opt/app","sudo mkdir -p /opt/config","sudo chown ec2-user:ec2-user /opt/config"]' \
+            --query 'Command.CommandId' --output text)
+          
+          # 명령 완료 대기  
+          aws ssm wait command-executed --command-id $COMMAND_ID --instance-id ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }}
 
   # 백엔드 빌드 및 배포 (SSM 사용)
   deploy-backend:
@@ -331,19 +328,14 @@ jobs:
       - name: Deploy to EC2 instances via SSM
         run: |
           # 두 인스턴스에 동시 배포
-          aws ssm send-command \
+          COMMAND_ID=$(aws ssm send-command \
             --instance-ids ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }} ${{ needs.deploy-infrastructure.outputs.ec2-id-2 }} \
             --document-name "AWS-RunShellScript" \
-            --parameters 'commands=[
-              "cd /opt/app",
-              "sudo pkill -f \"java.*app.jar\" || true",
-              "aws s3 cp s3://${{ needs.deploy-infrastructure.outputs.s3-bucket }}/deploy/app.jar /opt/app/app.jar",
-              "aws s3 cp s3://${{ needs.deploy-infrastructure.outputs.s3-bucket }}/deploy/application.yml /opt/config/application.yml",
-              "nohup java -jar /opt/app/app.jar --spring.config.location=/opt/config/application.yml > /opt/app/app.log 2>&1 &",
-              "sleep 10",
-              "if pgrep -f \"java.*app.jar\"; then echo \"✅ Application started successfully\"; else echo \"❌ Application failed to start\"; tail -20 /opt/app/app.log; exit 1; fi"
-            ]' \
-            --wait-for-completion
+            --parameters 'commands=["cd /opt/app","sudo pkill -f \"java.*app.jar\" || true","aws s3 cp s3://${{ needs.deploy-infrastructure.outputs.s3-bucket }}/deploy/app.jar /opt/app/app.jar","aws s3 cp s3://${{ needs.deploy-infrastructure.outputs.s3-bucket }}/deploy/application.yml /opt/config/application.yml","nohup java -jar /opt/app/app.jar --spring.config.location=/opt/config/application.yml > /opt/app/app.log 2>&1 &","sleep 10","if pgrep -f \"java.*app.jar\"; then echo \"✅ Application started successfully\"; else echo \"❌ Application failed to start\"; tail -20 /opt/app/app.log; exit 1; fi"]' \
+            --query 'Command.CommandId' --output text)
+          
+          # 명령 완료 대기
+          aws ssm wait command-executed --command-id $COMMAND_ID --instance-id ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }}
 
       - name: Cleanup temporary files
         run: |
