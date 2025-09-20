@@ -88,6 +88,8 @@ jobs:
           if [[ "${{ needs.detect-changes.outputs.frontend }}" == "true" && "${{ needs.detect-changes.outputs.backend }}" == "false" && "${{ needs.detect-changes.outputs.terraform }}" == "false" ]]; then
             echo "Frontend-only deployment: Targeting S3 + CloudFront"
             terraform plan \
+              -var="db_username=${{ secrets.DB_USERNAME }}" \
+              -var="db_password=${{ secrets.DB_PASSWORD }}" \
               -target=aws_s3_bucket.s3-web \
               -target=aws_s3_bucket_website_configuration.s3-web-config \
               -target=aws_s3_bucket_policy.web \
@@ -98,6 +100,8 @@ jobs:
           elif [[ "${{ needs.detect-changes.outputs.backend }}" == "true" && "${{ needs.detect-changes.outputs.frontend }}" == "false" && "${{ needs.detect-changes.outputs.terraform }}" == "false" ]]; then
             echo "Backend-only deployment: Excluding S3 + CloudFront"
             terraform plan \
+              -var="db_username=${{ secrets.DB_USERNAME }}" \
+              -var="db_password=${{ secrets.DB_PASSWORD }}" \
               -target=aws_vpc.main \
               -target=aws_subnet.pub-sub \
               -target=aws_subnet.pri-sub-was \
@@ -127,7 +131,10 @@ jobs:
               -no-color
           else
             echo "Full infrastructure deployment"
-            terraform plan -no-color
+            terraform plan \
+              -var="db_username=${{ secrets.DB_USERNAME }}" \
+              -var="db_password=${{ secrets.DB_PASSWORD }}" \
+              -no-color
           fi
 
       - name: Terraform Apply (Conditional Targeting)
@@ -136,6 +143,8 @@ jobs:
           if [[ "${{ needs.detect-changes.outputs.frontend }}" == "true" && "${{ needs.detect-changes.outputs.backend }}" == "false" && "${{ needs.detect-changes.outputs.terraform }}" == "false" ]]; then
             echo "Applying S3 + CloudFront only"
             terraform apply \
+              -var="db_username=${{ secrets.DB_USERNAME }}" \
+              -var="db_password=${{ secrets.DB_PASSWORD }}" \
               -target=aws_s3_bucket.s3-web \
               -target=aws_s3_bucket_website_configuration.s3-web-config \
               -target=aws_s3_bucket_policy.web \
@@ -146,6 +155,8 @@ jobs:
           elif [[ "${{ needs.detect-changes.outputs.backend }}" == "true" && "${{ needs.detect-changes.outputs.frontend }}" == "false" && "${{ needs.detect-changes.outputs.terraform }}" == "false" ]]; then
             echo "Applying backend infrastructure (excluding S3 + CloudFront)"
             terraform apply \
+              -var="db_username=${{ secrets.DB_USERNAME }}" \
+              -var="db_password=${{ secrets.DB_PASSWORD }}" \
               -target=aws_vpc.main \
               -target=aws_subnet.pub-sub \
               -target=aws_subnet.pri-sub-was \
@@ -175,7 +186,10 @@ jobs:
               -auto-approve -no-color
           else
             echo "Applying full infrastructure"
-            terraform apply -auto-approve -no-color
+            terraform apply \
+              -var="db_username=${{ secrets.DB_USERNAME }}" \
+              -var="db_password=${{ secrets.DB_PASSWORD }}" \
+              -auto-approve -no-color
           fi
 
       - name: Get Terraform Outputs
