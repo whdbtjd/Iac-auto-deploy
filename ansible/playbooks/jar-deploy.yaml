@@ -13,6 +13,15 @@
       wait_for:
         timeout: 10
 
+    - name: Copy JAR file from build location
+      copy:
+        src: "{{ jar_source_path | default('../../backend/build/libs/') }}"
+        dest: /opt/app/app.jar
+        owner: ec2-user
+        group: ec2-user
+        mode: '0755'
+      when: jar_source_path is defined
+
     - name: Check if JAR file exists
       stat:
         path: /opt/app/app.jar
@@ -20,7 +29,7 @@
 
     - name: Fail if JAR file not found
       fail:
-        msg: "JAR file not found at /opt/app/app.jar. Please ensure SSM deployment completed successfully."
+        msg: "JAR file not found at /opt/app/app.jar. Please ensure JAR file is copied or SSM deployment completed successfully."
       when: not jar_file.stat.exists
 
     - name: Start voting-app service
