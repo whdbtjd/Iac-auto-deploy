@@ -1,4 +1,36 @@
-name: Auto Deploy Pipeline
+- name: Debug SSM connectivity
+        run: |
+          echo "Testing SSM connectivity to instances..."
+          aws ssm describe-instance-information \
+            --filters "Key=InstanceIds,Values=${{ needs.deploy-infrastructure.outputs.ec2-id-1 }},${{ needs.deploy-infrastructure.outputs.ec2-id-2 }}" \
+            --query 'InstanceInformationList[*].[InstanceId,PingStatus,LastPingDateTime]' \
+            --output table
+
+      - name: Test direct SSM session
+        run: |
+          echo "Testing direct SSM session..."
+          timeout 10 aws ssm start-session --target ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }} || echo "Direct SSM test completed"
+
+      - name: Create Ansible inventory with SSM ProxyCommand
+        working-directory: ./ansible
+        run: |
+          cat > inventory.ini << EOF
+          [webservers]
+          ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }} ansible_user=ec2-user
+          ${{ needs.deploy-infrastructure.outputs.ec2-id-2 }} ansible_user=ec2-user
+          
+          [webservers:vars]
+          ansible_connection=ssh
+          ansible_ssh_common_args='-o ProxyCommand="aws ssm start-session --target %h --document-name AWS-StartSSHSession --parameters portNumber=%p" -o ConnectTimeout=30 -o ConnectionAttempts=3'
+          ansible_ssh_private_key_file=/dev/null
+          ansible_ssh_extra_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PasswordAuthentication=no'
+          ansible_timeout=60
+          EOF
+
+      - name: Test Ansible connectivity with verbose output
+        working-directory: ./ansible
+        run: |
+          ansible webservers -i inventory.ini -m ping -vvv || truename: Auto Deploy Pipeline
 
 on:
   push:
@@ -236,37 +268,25 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install Ansible and AWS CLI Session Manager Plugin
+      - name: Install Ansible SSM plugin
         run: |
           pip install ansible boto3
-          # AWS CLI Session Manager Plugin 설치
-          curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o "session-manager-plugin.deb"
-          sudo dpkg -i session-manager-plugin.deb
+          # Ansible SSM 컬렉션 설치
+          ansible-galaxy collection install amazon.aws
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Wait for EC2 instances to be ready
-        run: |
-          echo "Waiting for EC2 instances to be ready for SSM..."
-          sleep 120
-
-      - name: Create Ansible inventory with SSM ProxyCommand
+      - name: Create Ansible inventory with SSM connection
         working-directory: ./ansible
         run: |
           cat > inventory.ini << EOF
           [webservers]
-          web1 ansible_host=${{ needs.deploy-infrastructure.outputs.ec2-private-ip-1 }} ansible_user=ec2-user
-          web2 ansible_host=${{ needs.deploy-infrastructure.outputs.ec2-private-ip-2 }} ansible_user=ec2-user
+          ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }}
+          ${{ needs.deploy-infrastructure.outputs.ec2-id-2 }}
           
           [webservers:vars]
-          ansible_ssh_common_args='-o ProxyCommand="aws ssm start-session --target %h --document-name AWS-StartSSHSession --parameters portNumber=%p"'
-          ansible_ssh_private_key_file=/dev/null
-          ansible_ssh_extra_args='-o StrictHostKeyChecking=no'
+          ansible_connection=aws_ssm
+          ansible_aws_ssm_bucket_name=${{ needs.deploy-infrastructure.outputs.s3-bucket }}
+          ansible_aws_ssm_region=${{ env.AWS_REGION }}
+          ansible_user=ec2-user
           EOF
 
       - name: Test Ansible connectivity
@@ -374,13 +394,13 @@ jobs:
         run: |
           cat > inventory.ini << EOF
           [webservers]
-          web1 ansible_host=${{ needs.deploy-infrastructure.outputs.ec2-private-ip-1 }} ansible_user=ec2-user
-          web2 ansible_host=${{ needs.deploy-infrastructure.outputs.ec2-private-ip-2 }} ansible_user=ec2-user
+          ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }} ansible_user=ec2-user
+          ${{ needs.deploy-infrastructure.outputs.ec2-id-2 }} ansible_user=ec2-user
           
           [webservers:vars]
           ansible_ssh_common_args='-o ProxyCommand="aws ssm start-session --target %h --document-name AWS-StartSSHSession --parameters portNumber=%p"'
           ansible_ssh_private_key_file=/dev/null
-          ansible_ssh_extra_args='-o StrictHostKeyChecking=no'
+          ansible_ssh_extra_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
           EOF
 
       - name: Deploy JAR via Ansible
