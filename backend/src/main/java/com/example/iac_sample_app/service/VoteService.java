@@ -21,7 +21,7 @@ public class VoteService {
     private final VoteRepository voteRepository;
     private final VoteOptionRepository voteOptionRepository;
 
-    // 모든 활성 투표 조회
+    // 모든 활성 투표 조회 dd
     @Transactional(readOnly = true)
     public List<VoteResponse> getAllActiveVotes() {
         List<Vote> votes = voteRepository.findByActiveTrueOrderByCreatedAtDesc();
