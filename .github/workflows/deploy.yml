@@ -84,7 +84,7 @@ jobs:
           echo "- Terraform: ${{ needs.detect-changes.outputs.terraform }}"
           
           if [[ "${{ needs.detect-changes.outputs.frontend }}" == "true" && "${{ needs.detect-changes.outputs.backend }}" == "false" && "${{ needs.detect-changes.outputs.terraform }}" == "false" ]]; then
-            echo "🎯 Frontend-only deployment: Targeting S3 + CloudFront"
+            echo "Frontend-only deployment: Targeting S3 + CloudFront"
             terraform plan \
               -target=aws_s3_bucket.s3-web \
               -target=aws_s3_bucket_website_configuration.s3-web-config \
@@ -93,8 +93,40 @@ jobs:
               -target=aws_cloudfront_origin_access_control.web \
               -target=aws_cloudfront_distribution.web \
               -no-color
+          elif [[ "${{ needs.detect-changes.outputs.backend }}" == "true" && "${{ needs.detect-changes.outputs.frontend }}" == "false" && "${{ needs.detect-changes.outputs.terraform }}" == "false" ]]; then
+            echo "Backend-only deployment: Excluding S3 + CloudFront"
+            terraform plan \
+              -target=aws_vpc.main \
+              -target=aws_subnet.pub-sub \
+              -target=aws_subnet.pri-sub-was \
+              -target=aws_subnet.pri-sub-db \
+              -target=aws_internet_gateway.igw \
+              -target=aws_route_table.pub-rt \
+              -target=aws_route_table.pri-rt \
+              -target=aws_route_table_association.pub-rta \
+              -target=aws_route_table_association.pri-rta-was \
+              -target=aws_route_table_association.pri-rta-db \
+              -target=aws_nat_gateway.ngw \
+              -target=aws_eip.nat-eip \
+              -target=aws_security_group.sg-alb \
+              -target=aws_security_group.sg-was \
+              -target=aws_security_group.sg-db \
+              -target=aws_instance.ec2-1 \
+              -target=aws_instance.ec2-2 \
+              -target=aws_lb.main \
+              -target=aws_lb_target_group.was \
+              -target=aws_lb_listener.was \
+              -target=aws_lb_target_group_attachment.was-1 \
+              -target=aws_lb_target_group_attachment.was-2 \
+              -target=aws_db_instance.rds \
+              -target=aws_db_subnet_group.rds-subnet-group \
+              -target=aws_iam_role.ec2_role \
+              -target=aws_iam_instance_profile.ec2_profile \
+              -target=aws_iam_role_policy_attachment.ec2_ssm \
+              -target=aws_iam_role_policy_attachment.ec2_s3 \
+              -no-color
           else
-            echo "🚀 Full infrastructure deployment"
+            echo "Full infrastructure deployment"
             terraform plan -no-color
           fi
 
@@ -102,7 +134,7 @@ jobs:
         working-directory: ./terraform
         run: |
           if [[ "${{ needs.detect-changes.outputs.frontend }}" == "true" && "${{ needs.detect-changes.outputs.backend }}" == "false" && "${{ needs.detect-changes.outputs.terraform }}" == "false" ]]; then
-            echo "🎯 Applying S3 + CloudFront only"
+            echo "Applying S3 + CloudFront only"
             terraform apply \
               -target=aws_s3_bucket.s3-web \
               -target=aws_s3_bucket_website_configuration.s3-web-config \
@@ -111,8 +143,40 @@ jobs:
               -target=aws_cloudfront_origin_access_control.web \
               -target=aws_cloudfront_distribution.web \
               -auto-approve -no-color
+          elif [[ "${{ needs.detect-changes.outputs.backend }}" == "true" && "${{ needs.detect-changes.outputs.frontend }}" == "false" && "${{ needs.detect-changes.outputs.terraform }}" == "false" ]]; then
+            echo "Applying backend infrastructure (excluding S3 + CloudFront)"
+            terraform apply \
+              -target=aws_vpc.main \
+              -target=aws_subnet.pub-sub \
+              -target=aws_subnet.pri-sub-was \
+              -target=aws_subnet.pri-sub-db \
+              -target=aws_internet_gateway.igw \
+              -target=aws_route_table.pub-rt \
+              -target=aws_route_table.pri-rt \
+              -target=aws_route_table_association.pub-rta \
+              -target=aws_route_table_association.pri-rta-was \
+              -target=aws_route_table_association.pri-rta-db \
+              -target=aws_nat_gateway.ngw \
+              -target=aws_eip.nat-eip \
+              -target=aws_security_group.sg-alb \
+              -target=aws_security_group.sg-was \
+              -target=aws_security_group.sg-db \
+              -target=aws_instance.ec2-1 \
+              -target=aws_instance.ec2-2 \
+              -target=aws_lb.main \
+              -target=aws_lb_target_group.was \
+              -target=aws_lb_listener.was \
+              -target=aws_lb_target_group_attachment.was-1 \
+              -target=aws_lb_target_group_attachment.was-2 \
+              -target=aws_db_instance.rds \
+              -target=aws_db_subnet_group.rds-subnet-group \
+              -target=aws_iam_role.ec2_role \
+              -target=aws_iam_instance_profile.ec2_profile \
+              -target=aws_iam_role_policy_attachment.ec2_ssm \
+              -target=aws_iam_role_policy_attachment.ec2_s3 \
+              -auto-approve -no-color
           else
-            echo "🚀 Applying full infrastructure"
+            echo "Applying full infrastructure"
             terraform apply -auto-approve -no-color
           fi
 
@@ -388,4 +452,4 @@ jobs:
           echo "- 인프라: ${{ needs.deploy-infrastructure.result }}"
           echo "- 서버설정: ${{ needs.setup-servers.result }}"  
           echo "- 백엔드: ${{ needs.deploy-backend.result }}"
-          echo "- 프론트엔드: ${{ needs.deploy-frontend.result }}" 
+          echo "- 프론트엔드: ${{ needs.deploy-frontend.result }}"
