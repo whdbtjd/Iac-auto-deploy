@@ -1,72 +1,51 @@
-# ?? ??
+# Spring Boot 애플리케이션 설정
 spring:
   application:
     name: voting-system
   
-  # ?? ?? (??)
-  profiles:
-    active: dev
-
-  # JPA ??
+  # JPA 및 Hibernate 설정
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.H2Dialect
+        dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
-
-  # ??? H2 ??????
+  
+  # MySQL 데이터소스 설정
   datasource:
-    url: jdbc:h2:mem:voting_db
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
+    url: jdbc:mysql://${DB_HOST:localhost}:3306/${DB_NAME:voting_db}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${DB_USERNAME:admin}
+    password: ${DB_PASSWORD:admin1234}
 
-  # H2 ?? ??? (???)
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
-
-# ?? ??
+# 서버 포트 설정
 server:
   port: 8080
 
-# CORS ??
+# 액추에이터 헬스체크 엔드포인트
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+# 로깅 설정
+logging:
+  level:
+    org.springframework: INFO
+    org.hibernate: WARN
+  file:
+    name: /opt/app/voting-app.log
+
+# CORS 설정 (프론트엔드 연동용)
 cors:
   allowed-origins:
     - http://localhost:3000
     - https://*.cloudfront.net
   allowed-methods: GET,POST,PUT,DELETE,OPTIONS
   allowed-headers: "*"
-
----
-# ???? ?? ?? (??? ????? ?????)
-spring:
-  config:
-    activate:
-      on-profile: prod   # ? ??? ??
-
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    show-sql: false
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-
-  # ????? PostgreSQL (????? ??)
-  datasource:
-    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/voting_db}
-    username: ${DB_USERNAME:voting_user}
-    password: ${DB_PASSWORD:voting_pass}
-    driver-class-name: org.postgresql.Driver
-
-  h2:
-    console:
-      enabled: false
-
-server:
-  port: ${SERVER_PORT:8080}
