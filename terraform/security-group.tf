@@ -47,6 +47,15 @@ resource "aws_security_group" "sg-was" {
     protocol        = "tcp"
     security_groups = [aws_security_group.sg-alb.id] # 출발지는 sg-alb 보안 그룹을 가진 ALB
   }
+  
+  # VPC Endpoint 통신용 HTTPS 추가
+  ingress {
+    description = "HTTPS for VPC Endpoints"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/16"]  # VPC 내부 통신
+  }
 
   egress {
     from_port   = 0
