@@ -388,4 +388,4 @@ jobs:
           echo "- 인프라: ${{ needs.deploy-infrastructure.result }}"
           echo "- 서버설정: ${{ needs.setup-servers.result }}"  
           echo "- 백엔드: ${{ needs.deploy-backend.result }}"
-          echo "- 프론트엔드: ${{ needs.deploy-frontend.result }}"
+          echo "- 프론트엔드: ${{ needs.deploy-frontend.result }}" 
