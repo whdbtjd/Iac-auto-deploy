@@ -105,27 +105,25 @@ jobs:
               -target=aws_internet_gateway.igw \
               -target=aws_route_table.pub-rt \
               -target=aws_route_table.pri-rt \
-              -target=aws_route_table_association.pub-rta \
-              -target=aws_route_table_association.pri-rta-was \
-              -target=aws_route_table_association.pri-rta-db \
-              -target=aws_nat_gateway.ngw \
-              -target=aws_eip.nat-eip \
+              -target=aws_route_table_association.pub-associate \
+              -target=aws_route_table_association.pri-associate-was \
+              -target=aws_nat_gateway.nat \
+              -target=aws_eip.eip \
               -target=aws_security_group.sg-alb \
               -target=aws_security_group.sg-was \
               -target=aws_security_group.sg-db \
               -target=aws_instance.ec2-1 \
               -target=aws_instance.ec2-2 \
-              -target=aws_lb.main \
-              -target=aws_lb_target_group.was \
-              -target=aws_lb_listener.was \
-              -target=aws_lb_target_group_attachment.was-1 \
-              -target=aws_lb_target_group_attachment.was-2 \
+              -target=aws_lb.alb \
+              -target=aws_lb_target_group.alb-tg \
+              -target=aws_lb_listener.alb-listner \
+              -target=aws_lb_target_group_attachment.ec2-1 \
+              -target=aws_lb_target_group_attachment.ec2-2 \
               -target=aws_db_instance.rds \
-              -target=aws_db_subnet_group.rds-subnet-group \
+              -target=aws_db_subnet_group.main \
               -target=aws_iam_role.ec2_role \
               -target=aws_iam_instance_profile.ec2_profile \
-              -target=aws_iam_role_policy_attachment.ec2_ssm \
-              -target=aws_iam_role_policy_attachment.ec2_s3 \
+              -target=aws_iam_role_policy_attachment.ec2_ssm_policy \
               -no-color
           else
             echo "Full infrastructure deployment"
@@ -155,27 +153,25 @@ jobs:
               -target=aws_internet_gateway.igw \
               -target=aws_route_table.pub-rt \
               -target=aws_route_table.pri-rt \
-              -target=aws_route_table_association.pub-rta \
-              -target=aws_route_table_association.pri-rta-was \
-              -target=aws_route_table_association.pri-rta-db \
-              -target=aws_nat_gateway.ngw \
-              -target=aws_eip.nat-eip \
+              -target=aws_route_table_association.pub-associate \
+              -target=aws_route_table_association.pri-associate-was \
+              -target=aws_nat_gateway.nat \
+              -target=aws_eip.eip \
               -target=aws_security_group.sg-alb \
               -target=aws_security_group.sg-was \
               -target=aws_security_group.sg-db \
               -target=aws_instance.ec2-1 \
               -target=aws_instance.ec2-2 \
-              -target=aws_lb.main \
-              -target=aws_lb_target_group.was \
-              -target=aws_lb_listener.was \
-              -target=aws_lb_target_group_attachment.was-1 \
-              -target=aws_lb_target_group_attachment.was-2 \
+              -target=aws_lb.alb \
+              -target=aws_lb_target_group.alb-tg \
+              -target=aws_lb_listener.alb-listner \
+              -target=aws_lb_target_group_attachment.ec2-1 \
+              -target=aws_lb_target_group_attachment.ec2-2 \
               -target=aws_db_instance.rds \
-              -target=aws_db_subnet_group.rds-subnet-group \
+              -target=aws_db_subnet_group.main \
               -target=aws_iam_role.ec2_role \
               -target=aws_iam_instance_profile.ec2_profile \
-              -target=aws_iam_role_policy_attachment.ec2_ssm \
-              -target=aws_iam_role_policy_attachment.ec2_s3 \
+              -target=aws_iam_role_policy_attachment.ec2_ssm_policy \
               -auto-approve -no-color
           else
             echo "Applying full infrastructure"
