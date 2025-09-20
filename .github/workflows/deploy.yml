@@ -37,15 +37,20 @@ jobs:
             ansible:
               - 'ansible/**'
 
-  # 인프라 배포 (가장 먼저 실행)
+  # 인프라 배포 (스마트 배포)
   deploy-infrastructure:
     needs: detect-changes
-    if: needs.detect-changes.outputs.terraform == 'true'
+    if: |
+      needs.detect-changes.outputs.terraform == 'true' ||
+      needs.detect-changes.outputs.backend == 'true' ||
+      needs.detect-changes.outputs.frontend == 'true' ||
+      github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     outputs:
       ec2-ip: ${{ steps.terraform.outputs.ec2-ip }}
       s3-bucket: ${{ steps.terraform.outputs.s3-bucket }}
       cloudfront-url: ${{ steps.terraform.outputs.cloudfront-url }}
+      db-endpoint: ${{ steps.terraform.outputs.db-endpoint }}
     
     steps:
       - name: Checkout code
@@ -68,30 +73,66 @@ jobs:
         working-directory: ./terraform
         run: terraform init
 
-      - name: Terraform Plan
+      - name: Terraform Plan (Conditional Targeting)
         working-directory: ./terraform
-        run: terraform plan -no-color
+        run: |
+          echo "Detected changes:"
+          echo "- Backend: ${{ needs.detect-changes.outputs.backend }}"
+          echo "- Frontend: ${{ needs.detect-changes.outputs.frontend }}"
+          echo "- Terraform: ${{ needs.detect-changes.outputs.terraform }}"
+          
+          if [[ "${{ needs.detect-changes.outputs.frontend }}" == "true" && "${{ needs.detect-changes.outputs.backend }}" == "false" && "${{ needs.detect-changes.outputs.terraform }}" == "false" ]]; then
+            echo "🎯 Frontend-only deployment: Targeting S3 + CloudFront"
+            terraform plan \
+              -target=aws_s3_bucket.s3-web \
+              -target=aws_s3_bucket_website_configuration.s3-web-config \
+              -target=aws_s3_bucket_policy.web \
+              -target=aws_s3_bucket_public_access_block.s3-web-unblock \
+              -target=aws_cloudfront_origin_access_control.web \
+              -target=aws_cloudfront_distribution.web \
+              -no-color
+          else
+            echo "🚀 Full infrastructure deployment"
+            terraform plan -no-color
+          fi
 
-      - name: Terraform Apply
+      - name: Terraform Apply (Conditional Targeting)
         working-directory: ./terraform
-        run: terraform apply -auto-approve -no-color
+        run: |
+          if [[ "${{ needs.detect-changes.outputs.frontend }}" == "true" && "${{ needs.detect-changes.outputs.backend }}" == "false" && "${{ needs.detect-changes.outputs.terraform }}" == "false" ]]; then
+            echo "🎯 Applying S3 + CloudFront only"
+            terraform apply \
+              -target=aws_s3_bucket.s3-web \
+              -target=aws_s3_bucket_website_configuration.s3-web-config \
+              -target=aws_s3_bucket_policy.web \
+              -target=aws_s3_bucket_public_access_block.s3-web-unblock \
+              -target=aws_cloudfront_origin_access_control.web \
+              -target=aws_cloudfront_distribution.web \
+              -auto-approve -no-color
+          else
+            echo "🚀 Applying full infrastructure"
+            terraform apply -auto-approve -no-color
+          fi
 
       - name: Get Terraform Outputs
         id: terraform
         working-directory: ./terraform
         run: |
-          echo "ec2-ip=$(terraform output -raw ec2_public_ip)" >> $GITHUB_OUTPUT
-          echo "s3-bucket=$(terraform output -raw s3_bucket_name)" >> $GITHUB_OUTPUT
-          echo "cloudfront-url=$(terraform output -raw cloudfront_domain_name)" >> $GITHUB_OUTPUT
-          echo "db-endpoint=$(terraform output -raw rds_endpoint)" >> $GITHUB_OUTPUT
+          echo "ec2-ip=$(terraform output -raw ec2_public_ip || echo '')" >> $GITHUB_OUTPUT
+          echo "s3-bucket=$(terraform output -raw s3_bucket_name || echo '')" >> $GITHUB_OUTPUT
+          echo "cloudfront-url=$(terraform output -raw cloudfront_domain_name || echo '')" >> $GITHUB_OUTPUT
+          echo "db-endpoint=$(terraform output -raw rds_endpoint || echo '')" >> $GITHUB_OUTPUT
 
-  # 서버 설정 (Ansible)
+  # 서버 설정 (백엔드 변경시에만)
   setup-servers:
     needs: [detect-changes, deploy-infrastructure]
     if: |
       always() && 
+      needs.deploy-infrastructure.result == 'success' &&
       (needs.detect-changes.outputs.ansible == 'true' || 
-       needs.detect-changes.outputs.terraform == 'true')
+       needs.detect-changes.outputs.terraform == 'true' ||
+       needs.detect-changes.outputs.backend == 'true' ||
+       github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     
     steps:
@@ -124,12 +165,12 @@ jobs:
         run: |
           ansible-playbook -i inventory.ini playbooks/setup-service.yml
 
-  # 백엔드 빌드 및 배포
+  # 백엔드 빌드 및 배포 (백엔드 변경시에만)
   deploy-backend:
     needs: [detect-changes, deploy-infrastructure, setup-servers]
     if: |
       always() && 
-      needs.detect-changes.outputs.backend == 'true' &&
+      (needs.detect-changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch') &&
       needs.setup-servers.result == 'success'
     runs-on: ubuntu-latest
     
@@ -166,12 +207,34 @@ jobs:
           scp -o StrictHostKeyChecking=no app.env ubuntu@${{ needs.deploy-infrastructure.outputs.ec2-ip }}:/home/ubuntu/
           scp -o StrictHostKeyChecking=no backend/build/libs/*.jar ubuntu@${{ needs.deploy-infrastructure.outputs.ec2-ip }}:/home/ubuntu/app.jar
 
-  # 프론트엔드 빌드 및 배포
+      - name: Start Application
+        run: |
+          ssh -o StrictHostKeyChecking=no ubuntu@${{ needs.deploy-infrastructure.outputs.ec2-ip }} "
+            # 기존 프로세스 종료
+            sudo pkill -f 'java.*app.jar' || true
+            
+            # 새 애플리케이션 시작
+            cd /home/ubuntu
+            source app.env
+            nohup java -jar app.jar > app.log 2>&1 &
+            
+            # 시작 확인
+            sleep 10
+            if pgrep -f 'java.*app.jar'; then
+              echo '✅ Application started successfully'
+            else
+              echo '❌ Application failed to start'
+              tail -20 app.log
+              exit 1
+            fi
+          "
+
+  # 프론트엔드 빌드 및 배포 (프론트엔드 변경시에만)
   deploy-frontend:
     needs: [detect-changes, deploy-infrastructure]
     if: |
       always() && 
-      needs.detect-changes.outputs.frontend == 'true' &&
+      (needs.detect-changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch') &&
       needs.deploy-infrastructure.result == 'success'
     runs-on: ubuntu-latest
     
@@ -193,7 +256,7 @@ jobs:
       - name: Build frontend
         working-directory: ./frontend
         env:
-          VITE_API_URL: https://${{ needs.deploy-infrastructure.outputs.cloudfront-url }}/api
+          VITE_API_URL: http://${{ needs.deploy-infrastructure.outputs.ec2-ip }}:8080/api
         run: npm run build
 
       - name: Configure AWS credentials
@@ -209,12 +272,19 @@ jobs:
 
       - name: Invalidate CloudFront
         run: |
+          # CloudFront 배포 ID 가져오기 (Comment 또는 Origin으로 찾기)
           DISTRIBUTION_ID=$(aws cloudfront list-distributions \
-            --query "DistributionList.Items[?Comment=='Voting System Frontend'].Id" \
+            --query "DistributionList.Items[?Origins.Items[0].DomainName=='${{ needs.deploy-infrastructure.outputs.s3-bucket }}.s3.amazonaws.com'].Id" \
             --output text)
-          aws cloudfront create-invalidation \
-            --distribution-id $DISTRIBUTION_ID \
-            --paths "/*"
+          
+          if [ -n "$DISTRIBUTION_ID" ] && [ "$DISTRIBUTION_ID" != "None" ]; then
+            echo "Invalidating CloudFront distribution: $DISTRIBUTION_ID"
+            aws cloudfront create-invalidation \
+              --distribution-id $DISTRIBUTION_ID \
+              --paths "/*"
+          else
+            echo "Warning: CloudFront distribution not found"
+          fi
 
   # 배포 완료 알림
   deployment-complete:
@@ -225,11 +295,23 @@ jobs:
     steps:
       - name: Deployment Summary
         run: |
-          echo "��� 배포 완료!"
-          echo "��� Frontend URL: https://${{ needs.deploy-infrastructure.outputs.cloudfront-url }}"
-          echo "��� Backend API: http://${{ needs.deploy-infrastructure.outputs.ec2-ip }}:8080/api"
+          echo "🚀 배포 완료!"
           echo ""
-          echo "��� 배포 상태:"
+          echo "📋 변경 감지 결과:"
+          echo "- Backend: ${{ needs.detect-changes.outputs.backend }}"
+          echo "- Frontend: ${{ needs.detect-changes.outputs.frontend }}"
+          echo "- Terraform: ${{ needs.detect-changes.outputs.terraform }}"
+          echo "- Ansible: ${{ needs.detect-changes.outputs.ansible }}"
+          echo ""
+          echo "🌐 서비스 URL:"
+          if [ -n "${{ needs.deploy-infrastructure.outputs.cloudfront-url }}" ]; then
+            echo "- Frontend: https://${{ needs.deploy-infrastructure.outputs.cloudfront-url }}"
+          fi
+          if [ -n "${{ needs.deploy-infrastructure.outputs.ec2-ip }}" ]; then
+            echo "- Backend API: http://${{ needs.deploy-infrastructure.outputs.ec2-ip }}:8080/api"
+          fi
+          echo ""
+          echo "📊 배포 상태:"
           echo "- 인프라: ${{ needs.deploy-infrastructure.result }}"
           echo "- 서버설정: ${{ needs.setup-servers.result }}"  
           echo "- 백엔드: ${{ needs.deploy-backend.result }}"
