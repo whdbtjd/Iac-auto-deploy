@@ -303,7 +303,7 @@ jobs:
           COMMAND_ID=$(aws ssm send-command \
             --instance-ids ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }} \
             --document-name "AWS-RunShellScript" \
-            --parameters 'commands=["sudo yum install -y https://repo.mysql.com/mysql80-community-release-el8-1.noarch.rpm"]' \
+            --parameters 'commands=["sudo yum install -y https://repo.mysql.com/mysql80-community-release-el7-5.noarch.rpm"]' \
             --query 'Command.CommandId' --output text)
           
           aws ssm wait command-executed --command-id $COMMAND_ID --instance-id ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }}
