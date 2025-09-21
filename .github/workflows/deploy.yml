@@ -292,16 +292,23 @@ jobs:
           aws ssm wait command-executed --command-id $COMMAND_ID --instance-id ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }}
           aws ssm get-command-invocation --command-id $COMMAND_ID --instance-id ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }}
 
-      - name: Install MySQL repository
+     # 기존 MySQL repository 단계를 이걸로 교체
+      - name: Install MySQL-compatible client
         run: |
           COMMAND_ID=$(aws ssm send-command \
             --instance-ids ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }} \
             --document-name "AWS-RunShellScript" \
-            --parameters 'commands=["sudo yum install -y wget","sudo wget https://repo.mysql.com/mysql80-community-release-el7-5.noarch.rpm","sudo yum localinstall -y mysql80-community-release-el7-5.noarch.rpm"]' \
+            --parameters 'commands=[
+            "echo === Removing MySQL repo (if exists) ===",
+            "sudo yum remove -y mysql80-community-release || true",
+            "echo === Installing MariaDB client ===", 
+            "sudo yum -y install mariadb",
+            "mysql --version"
+            ]' \
             --query 'Command.CommandId' --output text)
-          
-          aws ssm wait command-executed --command-id $COMMAND_ID --instance-id ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }}
-          aws ssm get-command-invocation --command-id $COMMAND_ID --instance-id ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }}
+  
+           aws ssm wait command-executed --command-id $COMMAND_ID --instance-id ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }}
+           aws ssm get-command-invocation --command-id $COMMAND_ID --instance-id ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }}
 
       - name: Install MySQL client
         run: |
