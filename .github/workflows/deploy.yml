@@ -231,7 +231,7 @@ jobs:
             echo "cloudfront-url=$CLOUDFRONT_URL" >> $GITHUB_OUTPUT
           fi
 
-  # 서버 설정 (Ansible + SSM) - MySQL 설치 제거하고 Ansible로 처리
+  # 서버 설정 (Ansible + SSM) - aws_ssm 플러그인 방식
   setup-servers:
     needs: [detect-changes, deploy-infrastructure]
     if: |
@@ -286,10 +286,16 @@ jobs:
           # 추가 안전 대기
           sleep 60
 
-      - name: Install Ansible SSM plugin
+      - name: Install Ansible and AWS collections
         run: |
-          pip install "ansible-core>=2.14,<2.17" "boto3>=1.26.0" "botocore>=1.29.0"
-          ansible-galaxy collection install "amazon.aws>=5.0.0"
+          pip install --upgrade pip
+          pip install "ansible-core>=2.15,<2.17" "boto3>=1.28.0" "botocore>=1.31.0"
+          ansible-galaxy collection install "amazon.aws:>=6.0.0,<7.0.0" --force
+          ansible-galaxy collection install "community.aws:>=6.0.0,<7.0.0" --force
+
+      - name: Verify AWS SSM plugin availability
+        run: |
+          ansible-doc -t connection community.aws.aws_ssm
 
       - name: Create Ansible inventory with SSM connection
         working-directory: ./ansible
@@ -300,8 +306,10 @@ jobs:
           ${{ needs.deploy-infrastructure.outputs.ec2-id-2 }}
           
           [webservers:vars]
-          ansible_connection=aws_ssm
+          ansible_connection=community.aws.aws_ssm
           ansible_aws_ssm_region=${{ env.AWS_REGION }}
+          ansible_aws_ssm_timeout=60
+          ansible_aws_ssm_retries=3
           EOF
 
       - name: Test Ansible connectivity
@@ -351,8 +359,9 @@ jobs:
       
       - name: Install dependencies
         run: |
-          pip install "ansible-core>=2.14,<2.17" "boto3>=1.26.0" "botocore>=1.29.0"
-          ansible-galaxy collection install "amazon.aws>=5.0.0"
+          pip install "ansible-core>=2.15,<2.17" "boto3>=1.28.0" "botocore>=1.31.0"
+          ansible-galaxy collection install "amazon.aws:>=6.0.0,<7.0.0" --force
+          ansible-galaxy collection install "community.aws:>=6.0.0,<7.0.0" --force
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -411,8 +420,10 @@ jobs:
           ${{ needs.deploy-infrastructure.outputs.ec2-id-2 }}
           
           [webservers:vars]
-          ansible_connection=aws_ssm
+          ansible_connection=community.aws.aws_ssm
           ansible_aws_ssm_region=${{ env.AWS_REGION }}
+          ansible_aws_ssm_timeout=60
+          ansible_aws_ssm_retries=3
           EOF
 
       - name: Deploy configuration via Ansible
