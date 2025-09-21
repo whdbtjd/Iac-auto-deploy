@@ -303,7 +303,7 @@ jobs:
           COMMAND_ID=$(aws ssm send-command \
             --instance-ids ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }} \
             --document-name "AWS-RunShellScript" \
-            --parameters 'commands=["sudo dnf install -y https://repo.mysql.com/mysql80-community-release-el9-1.noarch.rpm"]' \
+            --parameters 'commands=["sudo yum install -y https://repo.mysql.com/mysql80-community-release-el8-1.noarch.rpm"]' \
             --query 'Command.CommandId' --output text)
           
           aws ssm wait command-executed --command-id $COMMAND_ID --instance-id ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }}
@@ -314,7 +314,7 @@ jobs:
           COMMAND_ID=$(aws ssm send-command \
             --instance-ids ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }} \
             --document-name "AWS-RunShellScript" \
-            --parameters 'commands=["sudo dnf -y install mysql-community-client --nogpgcheck","mysql --version"]' \
+            --parameters 'commands=["sudo yum -y install mysql-community-client --nogpgcheck","mysql --version"]' \
             --query 'Command.CommandId' --output text)
           
           aws ssm wait command-executed --command-id $COMMAND_ID --instance-id ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }}
@@ -338,8 +338,8 @@ jobs:
 
       - name: Install Ansible SSM plugin
         run: |
-          pip install ansible boto3
-          ansible-galaxy collection install amazon.aws
+          pip install "ansible-core>=2.14,<2.17" "boto3>=1.26.0" "botocore>=1.29.0"
+          ansible-galaxy collection install "amazon.aws>=5.0.0"
 
       - name: Create Ansible inventory with SSM connection
         working-directory: ./ansible
@@ -352,13 +352,12 @@ jobs:
           [webservers:vars]
           ansible_connection=aws_ssm
           ansible_aws_ssm_region=${{ env.AWS_REGION }}
-          ansible_user=ec2-user
           EOF
 
       - name: Test Ansible connectivity
         working-directory: ./ansible
         run: |
-          ansible webservers -i inventory.ini -m ping
+          ansible webservers -i inventory.ini -m ping -vvv
 
       - name: Run Ansible setup playbook
         working-directory: ./ansible
@@ -402,8 +401,8 @@ jobs:
       
       - name: Install dependencies
         run: |
-          pip install ansible boto3
-          ansible-galaxy collection install amazon.aws
+          pip install "ansible-core>=2.14,<2.17" "boto3>=1.26.0" "botocore>=1.29.0"
+          ansible-galaxy collection install "amazon.aws>=5.0.0"
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -464,7 +463,6 @@ jobs:
           [webservers:vars]
           ansible_connection=aws_ssm
           ansible_aws_ssm_region=${{ env.AWS_REGION }}
-          ansible_user=ec2-user
           EOF
 
       - name: Deploy JAR via Ansible
