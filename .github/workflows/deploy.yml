@@ -450,7 +450,7 @@ jobs:
         working-directory: ./ansible
         run: |
           ansible-playbook -i inventory.ini playbooks/jar-deploy.yaml \
-            -e "jar_file=files/app.jar" \
+            -e "jar_file=../files/app.jar" \
             -e "app_path=/opt/app" \
             -v
 
