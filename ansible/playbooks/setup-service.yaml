@@ -13,10 +13,19 @@
       loop:
         - /opt/app
         - /opt/config
-      become: yes  
+      become: yes
 
+    # MySQL 클라이언트 설치 강화 - 충돌 패키지 제거
+    - name: Remove conflicting MySQL packages
+      yum:
+        name: 
+          - mysql-community-client
+          - mysql-community-libs
+          - mysql-community-common
+        state: absent
+      become: yes
+      failed_when: false
 
-    # MySQL 클라이언트 설치 추가
     - name: Install MariaDB client (MySQL compatible)
       yum:
         name: mariadb
@@ -25,11 +34,21 @@
       failed_when: false
       register: mariadb_install
 
-    - name: Fallback - Install via Amazon Linux Extras
-      command: amazon-linux-extras install -y mariadb10.5
+    - name: Force install via dnf if yum fails
+      command: dnf install -y mariadb
       become: yes
       when: mariadb_install.failed | default(false)
       failed_when: false
+      register: mariadb_dnf
+
+    - name: Final fallback - amazon-linux-extras
+      command: amazon-linux-extras install -y mariadb10.5
+      become: yes
+      when: 
+        - mariadb_install.failed | default(false)
+        - mariadb_dnf.failed | default(false)
+      failed_when: false
+      register: mariadb_extras
 
     - name: Verify MySQL client installation
       command: mysql --version
@@ -39,6 +58,11 @@
     - name: Show MySQL client version
       debug:
         msg: "MySQL client version: {{ mysql_version.stdout if mysql_version.rc == 0 else 'Installation failed' }}"
+
+    - name: Fail if MySQL client not installed on any instance
+      fail:
+        msg: "Critical: MySQL client installation failed on {{ inventory_hostname }}. All installation methods failed."
+      when: mysql_version.rc != 0
 
     # 데이터베이스 연결 테스트 및 DB 생성 (변수가 정의된 경우에만)
     - name: Test database connection and create database
@@ -56,7 +80,7 @@
 
     - name: Show database connection result
       debug:
-        msg: "Database connection: {{ 'Success' if db_result.rc == 0 else 'Failed' }}"
+        msg: "Database connection: {{ 'Success' if (db_result is defined and db_result.rc is defined and db_result.rc == 0) else 'Failed or Skipped' }}"
       when: db_result is defined
 
     - name: Create systemd service file
