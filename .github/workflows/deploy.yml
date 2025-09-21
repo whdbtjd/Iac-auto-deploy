@@ -295,7 +295,7 @@ jobs:
 
       - name: Verify AWS SSM plugin availability
         run: |
-          ansible-doc -t connection community.aws.aws_ssm
+          ansible-doc -t connection amazon.aws.aws_ssm
 
       - name: Create Ansible inventory with SSM connection
         working-directory: ./ansible
@@ -306,7 +306,7 @@ jobs:
           ${{ needs.deploy-infrastructure.outputs.ec2-id-2 }}
           
           [webservers:vars]
-          ansible_connection=community.aws.aws_ssm
+          ansible_connection=amazon.aws.aws_ssm
           ansible_aws_ssm_region=${{ env.AWS_REGION }}
           ansible_aws_ssm_timeout=60
           ansible_aws_ssm_retries=3
@@ -314,9 +314,6 @@ jobs:
 
       - name: Test Ansible connectivity
         working-directory: ./ansible
-        env:
-          ANSIBLE_AWS_SSM_BUCKET_NAME: ""
-          ANSIBLE_AWS_SSM_USE_INSTANCE_ROLE: "true"
         run: |
           ansible webservers -i inventory.ini -m ping -vvv
 
@@ -423,7 +420,7 @@ jobs:
           ${{ needs.deploy-infrastructure.outputs.ec2-id-2 }}
           
           [webservers:vars]
-          ansible_connection=community.aws.aws_ssm
+          ansible_connection=amazon.aws.aws_ssm
           ansible_aws_ssm_region=${{ env.AWS_REGION }}
           ansible_aws_ssm_timeout=60
           ansible_aws_ssm_retries=3
