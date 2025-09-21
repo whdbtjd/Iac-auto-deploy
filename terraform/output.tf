@@ -63,3 +63,9 @@ output "ec2_instance_ids" {
     aws_instance.ec2-2.id
   ]
 }
+
+# ssm 로그 저장용 버킷
+output "ssm_bucket_name" {
+  description = "S3 bucket name for SSM session logs"
+  value       = aws_s3_bucket.ssm_logs.bucket
+}

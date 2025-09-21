@@ -3,7 +3,7 @@ resource "random_id" "bucket_suffix" {
   byte_length = 4
 }
 
-# S3 버킷 생성
+# 배포용 S3 버킷 생성
 resource "aws_s3_bucket" "s3-web" {
   bucket = "frontend-web-${random_id.bucket_suffix.hex}"
   
@@ -11,6 +11,17 @@ resource "aws_s3_bucket" "s3-web" {
     Name = "frontend-web"
   }
 }
+
+# ssm 로그 저장용 버킷
+resource "aws_s3_bucket" "ssm_logs" {
+  bucket = "ansible-ssm-logs-${random_id.bucket_suffix.hex}"
+  
+  tags = {
+    Name = "SSM Session Logs"
+    Purpose = "Ansible SSM Connection"
+  }
+}
+
 
 # 정적 웹사이트 호스팅 설정
 resource "aws_s3_bucket_website_configuration" "s3-web-config" {

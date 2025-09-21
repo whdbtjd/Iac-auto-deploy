@@ -53,6 +53,7 @@ jobs:
       ec2-private-ip-2: ${{ steps.terraform.outputs.ec2-private-ip-2 }}
       alb-dns: ${{ steps.terraform.outputs.alb-dns }}
       s3-bucket: ${{ steps.terraform.outputs.s3-bucket }}
+      ssm-bucket: ${{ steps.terraform.outputs.ssm-bucket }}
       cloudfront-url: ${{ steps.terraform.outputs.cloudfront-url }}
       db-endpoint: ${{ steps.terraform.outputs.db-endpoint }}
     
@@ -131,6 +132,9 @@ jobs:
               -target=aws_vpc_endpoint.ssm \
               -target=aws_vpc_endpoint.ssm_messages \
               -target=aws_vpc_endpoint.ec2_messages \
+              -target=aws_s3_bucket.ssm_logs \
+              -target=aws_s3_bucket_versioning.ssm_logs \
+              -target=aws_s3_bucket_server_side_encryption_configuration.ssm_logs \
               -no-color
           else
             echo "Full infrastructure deployment"
@@ -189,6 +193,9 @@ jobs:
               -target=aws_vpc_endpoint.ssm \
               -target=aws_vpc_endpoint.ssm_messages \
               -target=aws_vpc_endpoint.ec2_messages \
+              -target=aws_s3_bucket.ssm_logs \
+              -target=aws_s3_bucket_versioning.ssm_logs \
+              -target=aws_s3_bucket_server_side_encryption_configuration.ssm_logs \
               -auto-approve -no-color
           else
             echo "Applying full infrastructure"
@@ -219,6 +226,7 @@ jobs:
           echo "alb-dns=$ALB_DNS" >> $GITHUB_OUTPUT
         
           echo "s3-bucket=$(terraform output -raw s3_bucket_name || echo '')" >> $GITHUB_OUTPUT
+          echo "ssm-bucket=$(terraform output -raw ssm_bucket_name || echo '')" >> $GITHUB_OUTPUT
         
           # RDS endpoint에서 포트 제거
           RDS_ENDPOINT_RAW=$(terraform output -raw rds_endpoint || echo '')
@@ -231,7 +239,7 @@ jobs:
             echo "cloudfront-url=$CLOUDFRONT_URL" >> $GITHUB_OUTPUT
           fi
 
-  # 서버 설정 (Ansible + SSM) - amazon.aws.aws_ssm 플러그인 방식
+  # 서버 설정 (Ansible + SSM) - community.aws.aws_ssm 플러그인 방식
   setup-servers:
     needs: [detect-changes, deploy-infrastructure]
     if: |
@@ -291,10 +299,11 @@ jobs:
           pip install --upgrade pip
           pip install "ansible-core>=2.15,<2.17" "boto3>=1.28.0" "botocore>=1.31.0"
           ansible-galaxy collection install "amazon.aws:>=6.0.0,<7.0.0" --force
+          ansible-galaxy collection install "community.aws:>=6.0.0,<7.0.0" --force
 
       - name: Verify AWS SSM plugin availability
         run: |
-          ansible-doc -t connection amazon.aws.aws_ssm
+          ansible-doc -t connection aws_ssm
 
       - name: Create Ansible inventory with SSM connection
         working-directory: ./ansible
@@ -305,8 +314,9 @@ jobs:
           ${{ needs.deploy-infrastructure.outputs.ec2-id-2 }}
           
           [webservers:vars]
-          ansible_connection=amazon.aws.aws_ssm
+          ansible_connection=aws_ssm
           ansible_aws_ssm_region=${{ env.AWS_REGION }}
+          ansible_aws_ssm_bucket_name=${{ needs.deploy-infrastructure.outputs.ssm-bucket }}
           ansible_aws_ssm_timeout=60
           ansible_aws_ssm_retries=3
           EOF
@@ -360,6 +370,7 @@ jobs:
         run: |
           pip install "ansible-core>=2.15,<2.17" "boto3>=1.28.0" "botocore>=1.31.0"
           ansible-galaxy collection install "amazon.aws:>=6.0.0,<7.0.0" --force
+          ansible-galaxy collection install "community.aws:>=6.0.0,<7.0.0" --force
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -418,8 +429,9 @@ jobs:
           ${{ needs.deploy-infrastructure.outputs.ec2-id-2 }}
           
           [webservers:vars]
-          ansible_connection=amazon.aws.aws_ssm
+          ansible_connection=aws_ssm
           ansible_aws_ssm_region=${{ env.AWS_REGION }}
+          ansible_aws_ssm_bucket_name=${{ needs.deploy-infrastructure.outputs.ssm-bucket }}
           ansible_aws_ssm_timeout=60
           ansible_aws_ssm_retries=3
           EOF
