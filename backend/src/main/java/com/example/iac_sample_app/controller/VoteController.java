@@ -8,7 +8,7 @@ import java.util.*;
 @CrossOrigin(origins = "http://localhost:3000")
 public class VoteController {
 
-    // 임시 데이터 (실제로는 DB 연동) asdasdfddasaaadfadadaasdf
+    // 임시 데이터 (실제로는 DB 연동) asdasdfddasaaadfadadaasdfasdf
     private List<Map<String, Object>> votes = new ArrayList<>();
     private Long nextId = 1L;
 
