@@ -262,13 +262,9 @@ jobs:
       - name: Wait for EC2 instances to be ready for SSM
         run: |
           echo "Waiting for EC2 instances to be ready..."
-          
-          # EC2 인스턴스 상태 확인
-          echo "Checking EC2 instance state..."
           aws ec2 describe-instances --instance-ids ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }} \
             --query 'Reservations[0].Instances[0].State.Name' --output text
           
-          # SSM 에이전트 상태 확인 (최대 5분 대기)
           for i in {1..30}; do
             SSM_STATUS=$(aws ssm describe-instance-information \
               --filters "Key=InstanceIds,Values=${{ needs.deploy-infrastructure.outputs.ec2-id-1 }}" \
@@ -282,8 +278,6 @@ jobs:
               sleep 10
             fi
           done
-          
-          # 추가 안전 대기
           sleep 60
 
       - name: Debug EC2 User Data execution
@@ -303,7 +297,7 @@ jobs:
           COMMAND_ID=$(aws ssm send-command \
             --instance-ids ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }} \
             --document-name "AWS-RunShellScript" \
-            --parameters 'commands=["sudo yum install -y https://repo.mysql.com/mysql80-community-release-el7-5.noarch.rpm"]' \
+            --parameters 'commands=["sudo yum install -y wget","sudo wget https://repo.mysql.com/mysql80-community-release-el7-5.noarch.rpm","sudo yum localinstall -y mysql80-community-release-el7-5.noarch.rpm"]' \
             --query 'Command.CommandId' --output text)
           
           aws ssm wait command-executed --command-id $COMMAND_ID --instance-id ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }}
@@ -314,7 +308,7 @@ jobs:
           COMMAND_ID=$(aws ssm send-command \
             --instance-ids ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }} \
             --document-name "AWS-RunShellScript" \
-            --parameters 'commands=["sudo yum -y install mysql-community-client --nogpgcheck","mysql --version"]' \
+            --parameters 'commands=["sudo yum clean all","sudo yum -y install mysql-community-client --nogpgcheck","mysql --version"]' \
             --query 'Command.CommandId' --output text)
           
           aws ssm wait command-executed --command-id $COMMAND_ID --instance-id ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }}
@@ -368,6 +362,7 @@ jobs:
             -e "db_password=${{ secrets.DB_PASSWORD }}" \
             -e "db_name=voting_db" \
             -v
+
 
   # 백엔드 빌드 및 배포 (Ansible + SSM)
   deploy-backend:
