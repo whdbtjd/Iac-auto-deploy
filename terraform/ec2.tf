@@ -33,6 +33,8 @@ resource "aws_instance" "ec2-1" {
 
   tags = {
     Name = "was-instance-1"
+    Version = "v2" 
+    
   }
 }
 
@@ -71,6 +73,7 @@ resource "aws_instance" "ec2-2" {
 
   tags = {
     Name = "was-instance-2"
+    Version = "v2" 
   }
 }
 
