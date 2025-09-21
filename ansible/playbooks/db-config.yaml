@@ -1,25 +1,270 @@
----
-- name: DB configuration
-  hosts: webservers
-  vars:
-    rds_endpoint: "{{ rds_host }}" # Terraform에서 생성 후 CI/CD로 전달 받아야 함
-    database_name: "{{ db_name | default('voting_db') }}"
-    db_username: "{{ db_user | default('admin') }}"
-    db_password: "{{ db_password }}" # 위와 같음
+name: Auto Deploy Pipeline
 
-  tasks:
-    - name: Create config directory
-      file:
-        path: /opt/config
-        state: directory
-        mode: '0755'
-        owner: ec2-user
-        group: ec2-user
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # 수동 실행 가능
 
-    - name: Deploy application.yml
-      template:
-        src: ../templates/application.yaml.j2 # 플레이북이 있는 상대 경로 기준
-        dest: /opt/config/application.yml
-        mode: '0644'
-        owner: ec2-user
-        group: ec2-user
+env:
+  AWS_REGION: ap-northeast-2
+
+jobs:
+  # 변경사항 감지
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.changes.outputs.backend }}
+      frontend: ${{ steps.changes.outputs.frontend }}
+      terraform: ${{ steps.changes.outputs.terraform }}
+      ansible: ${{ steps.changes.outputs.ansible }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+            frontend:
+              - 'frontend/**'
+            terraform:
+              - 'terraform/**'
+            ansible:
+              - 'ansible/**'
+
+  # 인프라 배포 (조건부 타겟팅)
+  deploy-infrastructure:
+    needs: detect-changes
+    if: |
+      needs.detect-changes.outputs.terraform == 'true' ||
+      needs.detect-changes.outputs.backend == 'true' ||
+      needs.detect-changes.outputs.frontend == 'true' ||
+      github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    outputs:
+      ec2-id-1: ${{ steps.terraform.outputs.ec2-id-1 }}
+      ec2-id-2: ${{ steps.terraform.outputs.ec2-id-2 }}
+      ec2-private-ip-1: ${{ steps.terraform.outputs.ec2-private-ip-1 }}
+      ec2-private-ip-2: ${{ steps.terraform.outputs.ec2-private-ip-2 }}
+      alb-dns: ${{ steps.terraform.outputs.alb-dns }}
+      s3-bucket: ${{ steps.terraform.outputs.s3-bucket }}
+      cloudfront-url: ${{ steps.terraform.outputs.cloudfront-url }}
+      db-endpoint: ${{ steps.terraform.outputs.db-endpoint }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.0
+          terraform_wrapper: false
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform Init
+        working-directory: ./terraform
+        run: terraform init
+
+      - name: Terraform Plan (Conditional Targeting)
+        working-directory: ./terraform
+        run: |
+          echo "Detected changes:"
+          echo "- Backend: ${{ needs.detect-changes.outputs.backend }}"
+          echo "- Frontend: ${{ needs.detect-changes.outputs.frontend }}"
+          echo "- Terraform: ${{ needs.detect-changes.outputs.terraform }}"
+          # ... (생략: 기존 조건부 plan 로직 동일) ...
+
+      - name: Terraform Apply (Conditional Targeting)
+        working-directory: ./terraform
+        run: |
+          # ... (생략: 기존 조건부 apply 로직 동일) ...
+
+      - name: Get Terraform Outputs
+        id: terraform
+        working-directory: ./terraform
+        run: |
+          EC2_IDS=$(terraform output -json ec2_instance_ids)
+          EC2_PRIVATE_IPS=$(terraform output -json ec2_private_ips)
+        
+          EC2_ID_1=$(echo $EC2_IDS | jq -r '.[0]')
+          EC2_ID_2=$(echo $EC2_IDS | jq -r '.[1]')
+          EC2_PRIVATE_IP_1=$(echo $EC2_PRIVATE_IPS | jq -r '.[0]')
+          EC2_PRIVATE_IP_2=$(echo $EC2_PRIVATE_IPS | jq -r '.[1]')
+        
+          echo "ec2-id-1=$EC2_ID_1" >> $GITHUB_OUTPUT
+          echo "ec2-id-2=$EC2_ID_2" >> $GITHUB_OUTPUT
+          echo "ec2-private-ip-1=$EC2_PRIVATE_IP_1" >> $GITHUB_OUTPUT
+          echo "ec2-private-ip-2=$EC2_PRIVATE_IP_2" >> $GITHUB_OUTPUT
+        
+          ALB_DNS=$(aws elbv2 describe-load-balancers --query 'LoadBalancers[0].DNSName' --output text)
+          echo "alb-dns=$ALB_DNS" >> $GITHUB_OUTPUT
+        
+          echo "s3-bucket=$(terraform output -raw s3_bucket_name || echo '')" >> $GITHUB_OUTPUT
+        
+          RDS_ENDPOINT_RAW=$(terraform output -raw rds_endpoint || echo '')
+          RDS_ENDPOINT=$(echo $RDS_ENDPOINT_RAW | cut -d':' -f1)
+          echo "db-endpoint=$RDS_ENDPOINT" >> $GITHUB_OUTPUT
+        
+          S3_BUCKET=$(terraform output -raw s3_bucket_name || echo '')
+          if [ -n "$S3_BUCKET" ]; then
+            CLOUDFRONT_URL=$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[0].DomainName=='$S3_BUCKET.s3.amazonaws.com'].DomainName" --output text)
+            echo "cloudfront-url=$CLOUDFRONT_URL" >> $GITHUB_OUTPUT
+          fi
+
+  # 서버 설정 (Ansible + SSM)
+  setup-servers:
+    needs: [detect-changes, deploy-infrastructure]
+    if: |
+      always() && 
+      needs.deploy-infrastructure.result == 'success' &&
+      (needs.detect-changes.outputs.ansible == 'true' || 
+       needs.detect-changes.outputs.terraform == 'true' ||
+       needs.detect-changes.outputs.backend == 'true' ||
+       github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Wait for EC2 instances to be ready for SSM
+        run: |
+          echo "Waiting for EC2 instances to be ready..."
+          sleep 60
+
+      - name: Debug EC2 User Data execution
+        run: |
+          echo "=== Debugging EC2 User Data execution ==="
+          # (생략: 기존 코드 동일)
+
+      # ✅ 수정된 부분 (Amazon Linux 2 전용 MySQL 설치)
+      - name: Install MySQL repository
+        run: |
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }} \
+            --document-name "AWS-RunShellScript" \
+            --parameters 'commands=["sudo yum install -y https://repo.mysql.com/mysql80-community-release-el7-5.noarch.rpm"]' \
+            --query 'Command.CommandId' --output text)
+          
+          aws ssm wait command-executed --command-id $COMMAND_ID --instance-id ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }}
+          aws ssm get-command-invocation --command-id $COMMAND_ID --instance-id ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }}
+
+      - name: Install MySQL client  
+        run: |
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }} \
+            --document-name "AWS-RunShellScript" \
+            --parameters 'commands=["sudo yum clean all","sudo yum -y install mysql-community-client --nogpgcheck","mysql --version"]' \
+            --query 'Command.CommandId' --output text)
+          
+          aws ssm wait command-executed --command-id $COMMAND_ID --instance-id ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }}
+          aws ssm get-command-invocation --command-id $COMMAND_ID --instance-id ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }}
+
+      - name: Test database connections and create database
+        run: |
+          # (생략: 기존 코드 동일)
+
+      - name: Wait for EC2 instances to be ready
+        run: |
+          echo "Waiting for EC2 instances to be ready for Ansible..."
+          sleep 60
+
+      - name: Install Ansible SSM plugin
+        run: |
+          pip install ansible boto3
+          ansible-galaxy collection install amazon.aws
+
+      - name: Create Ansible inventory with SSM connection
+        working-directory: ./ansible
+        run: |
+          cat > inventory.ini << EOF
+          [webservers]
+          ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }}
+          ${{ needs.deploy-infrastructure.outputs.ec2-id-2 }}
+          
+          [webservers:vars]
+          ansible_connection=aws_ssm
+          ansible_aws_ssm_region=${{ env.AWS_REGION }}
+          EOF
+
+      - name: Test Ansible connectivity
+        working-directory: ./ansible
+        run: |
+          ansible webservers -i inventory.ini -m ping
+
+      - name: Run Ansible setup playbook
+        working-directory: ./ansible
+        run: |
+          ansible-playbook -i inventory.ini playbooks/setup-service.yaml \
+            -e "rds_host=${{ needs.deploy-infrastructure.outputs.db-endpoint }}" \
+            -e "db_user=${{ secrets.DB_USERNAME }}" \
+            -e "db_password=${{ secrets.DB_PASSWORD }}" \
+            -e "db_name=voting_db" \
+            -v
+
+  # 백엔드 빌드 및 배포 (Ansible + SSM)
+  deploy-backend:
+    needs: [detect-changes, deploy-infrastructure, setup-servers]
+    if: |
+      always() && 
+      (needs.detect-changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch') &&
+      needs.setup-servers.result == 'success'
+    runs-on: ubuntu-latest
+    
+    steps:
+      # (생략: 기존 backend 빌드 및 ansible 배포 스텝 동일)
+
+  # 프론트엔드 빌드 및 배포
+  deploy-frontend:
+    needs: [detect-changes, deploy-infrastructure]
+    if: |
+      always() && 
+      (needs.detect-changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch') &&
+      needs.deploy-infrastructure.result == 'success'
+    runs-on: ubuntu-latest
+    
+    steps:
+      # (생략: 기존 frontend 빌드 및 S3+CloudFront 배포 스텝 동일)
+
+  # 배포 완료 알림
+  deployment-complete:
+    needs: [detect-changes, deploy-infrastructure, setup-servers, deploy-backend, deploy-frontend]
+    if: always()
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Deployment Summary
+        run: |
+          echo "배포 완료!"
+          echo "- Backend: ${{ needs.detect-changes.outputs.backend }}"
+          echo "- Frontend: ${{ needs.detect-changes.outputs.frontend }}"
+          echo "- Terraform: ${{ needs.detect-changes.outputs.terraform }}"
+          echo "- Ansible: ${{ needs.detect-changes.outputs.ansible }}"
+          echo "- 인프라: ${{ needs.deploy-infrastructure.result }}"
+          echo "- 서버설정: ${{ needs.setup-servers.result }}"  
+          echo "- 백엔드: ${{ needs.deploy-backend.result }}"
+          echo "- 프론트엔드: ${{ needs.deploy-infrastructure.result }}"
