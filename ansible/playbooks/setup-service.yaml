@@ -13,26 +13,73 @@
       loop:
         - /opt/app
         - /opt/config
-    - name: Create systemd service file                  # systemd 서비스 파일 직접 구성
+
+    # MySQL 클라이언트 설치 추가
+    - name: Install MariaDB client (MySQL compatible)
+      yum:
+        name: mariadb
+        state: present
+      become: yes
+      failed_when: false
+      register: mariadb_install
+
+    - name: Fallback - Install via Amazon Linux Extras
+      command: amazon-linux-extras install -y mariadb10.5
+      become: yes
+      when: mariadb_install.failed | default(false)
+      failed_when: false
+
+    - name: Verify MySQL client installation
+      command: mysql --version
+      register: mysql_version
+      failed_when: false
+
+    - name: Show MySQL client version
+      debug:
+        msg: "MySQL client version: {{ mysql_version.stdout if mysql_version.rc == 0 else 'Installation failed' }}"
+
+    # 데이터베이스 연결 테스트 및 DB 생성 (변수가 정의된 경우에만)
+    - name: Test database connection and create database
+      command: >
+        mysql -h {{ rds_host }} -P 3306 
+        -u {{ db_user }} -p{{ db_password }} 
+        -e "CREATE DATABASE IF NOT EXISTS {{ db_name | default('voting_db') }};"
+      register: db_result
+      failed_when: false
+      when: 
+        - rds_host is defined
+        - db_user is defined
+        - db_password is defined
+        - mysql_version.rc == 0
+
+    - name: Show database connection result
+      debug:
+        msg: "Database connection: {{ 'Success' if db_result.rc == 0 else 'Failed' }}"
+      when: db_result is defined
+
+    - name: Create systemd service file
       copy:
         content:  |
           [Unit]
-          Description=Spring Boot Application          # 서비스 설명
+          Description=Spring Boot Application
 
           [Service]
-          ExecStart=/usr/bin/java -jar /opt/app/app.jar --spring.config.location=/opt/config/application.yml  # 실행 명령
+          ExecStart=/usr/bin/java -jar /opt/app/app.jar --spring.config.location=/opt/config/application.yml
           User=ec2-user
 
           [Install]
-          WantedBy=multi-user.target                   # 부팅시 자동 시작하게
-        dest: /etc/systemd/system/voting-app.service          # 서비스 파일 저장 위치
+          WantedBy=multi-user.target
+        dest: /etc/systemd/system/voting-app.service
+      become: yes
         
-    - name: Reload systemd daemon                        # systemd 데몬 리로드
+    - name: Reload systemd daemon
       systemd:
-        daemon_reload: yes                               # 새 서비스 파일 인식
+        daemon_reload: yes
+      become: yes
 
-    - name: Enable service (don't start yet)                     # 서비스 활성화만 (시작은 jar-deploy에서)
+    - name: Enable service (don't start yet)
       systemd:
-        name: voting-app                                      # 서비스 명
-        state: stopped                                   # 시작하지 않음
-        enabled: yes                                     # 부팅시 자동 시작 활성화
+        name: voting-app
+        state: stopped
+        enabled: yes
+      become: yes

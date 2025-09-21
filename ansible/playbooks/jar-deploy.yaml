@@ -7,42 +7,56 @@
       systemd:
         name: voting-app
         state: stopped
+      become: yes
       failed_when: false
 
     - name: Wait for service to stop
       wait_for:
         timeout: 10
 
-    - name: Copy JAR file from build location
+    - name: Copy JAR file from files directory (GitHub Actions prepared)
+      copy:
+        src: "{{ jar_file | default('files/app.jar') }}"
+        dest: /opt/app/app.jar
+        owner: ec2-user
+        group: ec2-user
+        mode: '0755'
+      become: yes
+      when: jar_file is defined or ansible_check_mode == false
+
+    - name: Copy JAR file from build location (fallback)
       copy:
         src: "{{ jar_source_path | default('../../backend/build/libs/') }}"
         dest: /opt/app/app.jar
         owner: ec2-user
         group: ec2-user
         mode: '0755'
-      when: jar_source_path is defined
+      become: yes
+      when: jar_source_path is defined and jar_file is not defined
 
     - name: Check if JAR file exists
       stat:
         path: /opt/app/app.jar
-      register: jar_file
+      register: jar_file_stat
 
     - name: Fail if JAR file not found
       fail:
         msg: "JAR file not found at /opt/app/app.jar. Please ensure JAR file is copied or SSM deployment completed successfully."
-      when: not jar_file.stat.exists
+      when: not jar_file_stat.stat.exists
 
     - name: Start voting-app service
       systemd:
         name: voting-app
         state: started
         enabled: yes
-      when: jar_file.stat.exists
+      become: yes
+      when: jar_file_stat.stat.exists
 
     - name: Verify service is running
       systemd:
         name: voting-app
       register: service_status
+      become: yes
 
     - name: Show service status
       debug:
