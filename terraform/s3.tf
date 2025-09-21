@@ -43,6 +43,7 @@ resource "aws_s3_bucket_policy" "web" {
   depends_on = [aws_cloudfront_distribution.web]  # 명시적 종속성
   
   policy = jsonencode({
+    Version = "2012-10-17"
     Statement = [
       {
         Effect = "Allow"
