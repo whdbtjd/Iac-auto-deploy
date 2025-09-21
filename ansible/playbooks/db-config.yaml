@@ -19,7 +19,7 @@
 
     - name: Deploy application.yml
       template:
-        src: templates/application.yaml.j2
+        src: ../templates/application.yaml.j2
         dest: /opt/config/application.yml
         mode: '0644'
         owner: ec2-user
