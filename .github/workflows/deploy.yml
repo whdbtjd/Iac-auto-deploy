@@ -284,7 +284,7 @@ jobs:
           done
           
           # 추가 안전 대기
-          sleep 30
+          sleep 60
 
       - name: Install MySQL repository
         run: |
