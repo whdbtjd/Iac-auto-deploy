@@ -314,6 +314,9 @@ jobs:
 
       - name: Test Ansible connectivity
         working-directory: ./ansible
+        env:
+          ANSIBLE_AWS_SSM_BUCKET_NAME: ""
+          ANSIBLE_AWS_SSM_USE_INSTANCE_ROLE: "true"
         run: |
           ansible webservers -i inventory.ini -m ping -vvv
 
