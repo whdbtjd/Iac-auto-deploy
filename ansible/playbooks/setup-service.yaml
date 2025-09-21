@@ -13,6 +13,8 @@
       loop:
         - /opt/app
         - /opt/config
+      become: yes  
+
 
     # MySQL 클라이언트 설치 추가
     - name: Install MariaDB client (MySQL compatible)
