@@ -85,13 +85,20 @@
 
     - name: Create systemd service file
       copy:
-        content:  |
+        content: |
           [Unit]
           Description=Spring Boot Application
+          After=network.target
 
           [Service]
-          ExecStart=/usr/bin/java -jar /opt/app/app.jar --spring.config.location=/opt/config/application.yml
+          Type=simple
+          ExecStart=/usr/bin/java -Xms256m -Xmx1g -jar /opt/app/app.jar --spring.config.location=/opt/config/application.yml
           User=ec2-user
+          Restart=always
+          RestartSec=10
+          TimeoutStartSec=120
+          TimeoutStopSec=30
+          KillMode=mixed
 
           [Install]
           WantedBy=multi-user.target
