@@ -79,7 +79,7 @@ function App() {
       <div className="container">
         {/* 헤더 */}
         <header className="header">
-          <h1>📊 투표 시스템</h1>
+          <h1>📊 Sample App</h1>
           <p>실시간 투표와 결과를 확인해보세요</p>
           
           {/* 서버 상태 표시 */}
