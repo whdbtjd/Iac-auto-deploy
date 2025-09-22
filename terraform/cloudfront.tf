@@ -14,7 +14,7 @@ resource "aws_cloudfront_distribution" "web" {
   
   # 오리진 설정
   origin {
-    domain_name              = aws_s3_bucket.s3-web.bucket_domain_name # s3버킷 도메인
+    domain_name              = aws_s3_bucket.s3-web.bucket_regional_domain_name # s3버킷 도메인
     origin_id                = "s3-origin"
     origin_access_control_id = aws_cloudfront_origin_access_control.web.id
   }
