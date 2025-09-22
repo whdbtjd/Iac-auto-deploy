@@ -14,7 +14,7 @@ const VoteDetail = ({ vote: initialVote, onBack, onVoteUpdate }) => {
   const COLORS = ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', '#43e97b', '#fa709a', '#f9ca24'];
 
   useEffect(() => {
-    // 로컬스토리지에서 투표 기록 확인dddasd
+    // 로컬스토리지에서 투표 기록 확인dddasdad
     const votedItems = JSON.parse(localStorage.getItem('votedItems') || '[]');
     setHasVoted(votedItems.includes(vote.id));
   }, [vote.id]);
