@@ -10,6 +10,7 @@ resource "aws_cloudfront_origin_access_control" "web" {
 # CloudFront Distribution 생성
 resource "aws_cloudfront_distribution" "web" {
   enabled = true
+  default_root_object = "index.html" 
   
   # 오리진 설정
   origin {
