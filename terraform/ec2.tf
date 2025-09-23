@@ -10,9 +10,9 @@ resource "aws_instance" "ec2-1" {
 
   iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
 
-    # SSM Agent 설치 및 Java 설치
+  # SSM Agent 설치 및 Java 설치
   # User Data 변경: dnf → yum
-  user_data = base64encode(<<-EOF
+  user_data_base64 = base64encode(<<-EOF
   #!/bin/bash
   yum update -y
   yum install -y amazon-ssm-agent
@@ -53,7 +53,7 @@ resource "aws_instance" "ec2-2" {
 
   # SSM Agent 설치 및 Java 설치
   # User Data 변경: dnf → yum
-  user_data = base64encode(<<-EOF
+  user_data_base64 = base64encode(<<-EOF
   #!/bin/bash
   yum update -y
   yum install -y amazon-ssm-agent

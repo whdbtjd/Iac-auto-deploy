@@ -107,7 +107,7 @@ output "internet_gateway_id" {
 
 output "nat_gateway_ids" {
   description = "NAT Gateway IDs"
-  value       = aws_nat_gateway.nat-gw[*].id
+  value       = aws_nat_gateway.nat[*].id
 }
 
 # 보안 그룹 정보
