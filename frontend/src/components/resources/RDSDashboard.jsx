@@ -147,23 +147,7 @@ const RDSDashboard = () => {
               </div>
 
               <div className="info-section">
-                <h4>🔒 보안 및 백업</h4>
                 <div className="security-info">
-                  <div className="security-item">
-                    <span className="security-label">암호화:</span>
-                    <span className={`security-value ${rdsData.encryptionEnabled ? 'enabled' : 'disabled'}`}>
-                      {rdsData.encryptionEnabled ? '🔐 활성화' : '🔓 비활성화'}
-                    </span>
-                  </div>
-                  <div className="security-item">
-                    <span className="security-label">자동 백업:</span>
-                    <span className={`security-value ${rdsData.backupRetentionPeriod > 0 ? 'enabled' : 'disabled'}`}>
-                      {rdsData.backupRetentionPeriod > 0 ? 
-                        `📦 ${rdsData.backupRetentionPeriod}일 보관` : 
-                        '❌ 비활성화'
-                      }
-                    </span>
-                  </div>
                   <div className="security-item">
                     <span className="security-label">퍼블릭 액세스:</span>
                     <span className={`security-value ${rdsData.publiclyAccessible ? 'enabled' : 'disabled'}`}>
