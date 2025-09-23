@@ -49,12 +49,12 @@ const ResourceDashboard = () => {
         </div>
         <div className="card-content">
           <div className="metric">
-            <span className="metric-value">{infraStatus?.ec2InstanceCount || 0}</span>
+            <span className="metric-value">{infraStatus?.ec2Instances?.length || 0}</span>
             <span className="metric-label">실행 중인 인스턴스</span>
           </div>
           <div className="status">
-            <span className={`status-badge ${infraStatus?.ec2Health?.toLowerCase()}`}>
-              {infraStatus?.ec2Health || 'Unknown'}
+            <span className={`status-badge ${infraStatus?.ec2Instances?.length > 0 ? 'healthy' : 'unknown'}`}>
+              {infraStatus?.ec2Instances?.length > 0 ? 'Healthy' : 'Unknown'}
             </span>
           </div>
         </div>
@@ -66,12 +66,14 @@ const ResourceDashboard = () => {
         </div>
         <div className="card-content">
           <div className="metric">
-            <span className="metric-value">{infraStatus?.albTargetCount || 0}</span>
+            <span className="metric-value">
+              {infraStatus?.loadBalancer?.targetGroups?.reduce((sum, tg) => sum + (tg.healthyTargetCount || 0), 0) || 0}
+            </span>
             <span className="metric-label">연결된 타겟</span>
           </div>
           <div className="status">
-            <span className={`status-badge ${infraStatus?.albHealth?.toLowerCase()}`}>
-              {infraStatus?.albHealth || 'Unknown'}
+            <span className={`status-badge ${infraStatus?.loadBalancer?.state === 'active' ? 'healthy' : 'unknown'}`}>
+              {infraStatus?.loadBalancer?.state === 'active' ? 'Healthy' : 'Unknown'}
             </span>
           </div>
         </div>
@@ -83,12 +85,12 @@ const ResourceDashboard = () => {
         </div>
         <div className="card-content">
           <div className="metric">
-            <span className="metric-value">{infraStatus?.rdsConnectionCount || 0}</span>
-            <span className="metric-label">활성 연결</span>
+            <span className="metric-value">1</span>
+            <span className="metric-label">데이터베이스</span>
           </div>
           <div className="status">
-            <span className={`status-badge ${infraStatus?.rdsHealth?.toLowerCase()}`}>
-              {infraStatus?.rdsHealth || 'Unknown'}
+            <span className={`status-badge ${infraStatus?.database?.status === 'available' ? 'healthy' : 'unknown'}`}>
+              {infraStatus?.database?.status === 'available' ? 'Healthy' : 'Unknown'}
             </span>
           </div>
         </div>
@@ -100,12 +102,12 @@ const ResourceDashboard = () => {
         </div>
         <div className="card-content">
           <div className="metric">
-            <span className="metric-value">{infraStatus?.vpcSubnetCount || 0}</span>
+            <span className="metric-value">{infraStatus?.network?.subnets?.length || 0}</span>
             <span className="metric-label">서브넷</span>
           </div>
           <div className="status">
-            <span className={`status-badge ${infraStatus?.vpcHealth?.toLowerCase()}`}>
-              {infraStatus?.vpcHealth || 'Unknown'}
+            <span className={`status-badge ${infraStatus?.network?.state === 'available' ? 'healthy' : 'unknown'}`}>
+              {infraStatus?.network?.state === 'available' ? 'Healthy' : 'Unknown'}
             </span>
           </div>
         </div>
@@ -117,12 +119,12 @@ const ResourceDashboard = () => {
         </div>
         <div className="card-content">
           <div className="metric">
-            <span className="metric-value">{infraStatus?.s3BucketCount || 0}</span>
+            <span className="metric-value">1</span>
             <span className="metric-label">버킷</span>
           </div>
           <div className="status">
-            <span className={`status-badge ${infraStatus?.s3Health?.toLowerCase()}`}>
-              {infraStatus?.s3Health || 'Unknown'}
+            <span className={`status-badge ${infraStatus?.storage ? 'healthy' : 'unknown'}`}>
+              {infraStatus?.storage ? 'Healthy' : 'Unknown'}
             </span>
           </div>
         </div>
@@ -134,12 +136,12 @@ const ResourceDashboard = () => {
         </div>
         <div className="card-content">
           <div className="metric">
-            <span className="metric-value">{infraStatus?.cloudfrontDistributionCount || 0}</span>
+            <span className="metric-value">1</span>
             <span className="metric-label">배포</span>
           </div>
           <div className="status">
-            <span className={`status-badge ${infraStatus?.cloudfrontHealth?.toLowerCase()}`}>
-              {infraStatus?.cloudfrontHealth || 'Unknown'}
+            <span className={`status-badge ${infraStatus?.cdn?.status === 'Deployed' ? 'healthy' : 'unknown'}`}>
+              {infraStatus?.cdn?.status === 'Deployed' ? 'Healthy' : 'Unknown'}
             </span>
           </div>
         </div>
