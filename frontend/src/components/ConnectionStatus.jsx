@@ -32,9 +32,9 @@ const ConnectionStatus = ({ onConnectionChange }) => {
       }
 
       // 실제 연결 상태 확인
-      const response = await resourceAPI.getConnectionStatus(0);
+      const response = await resourceAPI.getConnectionStatus(3000);
       
-      if (response.data.connected) {
+      if (response.data.status === 'connected') {
         setConnectionStatus('connected');
         setConnectionMessage('AWS 리소스에 성공적으로 연결되었습니다!');
         onConnectionChange?.(true);
