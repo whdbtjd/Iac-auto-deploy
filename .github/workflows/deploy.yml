@@ -449,6 +449,22 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Recreate Ansible inventory for db-config
+        working-directory: ./ansible
+        run: |
+          cat > inventory.ini << EOF
+          [webservers]
+          ${{ needs.deploy-infrastructure.outputs.ec2-id-1 }}
+          ${{ needs.deploy-infrastructure.outputs.ec2-id-2 }}
+          
+          [webservers:vars]
+          ansible_connection=aws_ssm
+          ansible_aws_ssm_region=${{ env.AWS_REGION }}
+          ansible_aws_ssm_bucket_name=${{ needs.deploy-infrastructure.outputs.ssm-bucket }}
+          ansible_aws_ssm_timeout=60
+          ansible_aws_ssm_retries=3
+          EOF
+
       - name: Deploy configuration via Ansible
         working-directory: ./ansible
         run: |
