@@ -479,7 +479,7 @@ jobs:
             -e "alb_arn=${{ needs.deploy-infrastructure.outputs.alb-arn }}" \
             -e "alb_target_group_name=${{ needs.deploy-infrastructure.outputs.alb-target-group-name }}" \
             -e "alb_listener_arn=${{ needs.deploy-infrastructure.outputs.alb-listener-arn }}" \
-            -e "alb_availability_zones=${{ needs.deploy-infrastructure.outputs.alb-availability-zones }}" \
+            -e "alb_availability_zones='${{ needs.deploy-infrastructure.outputs.alb-availability-zones }}'" \
             -e "rds_instance_identifier=${{ needs.deploy-infrastructure.outputs.rds-instance-identifier }}" \
             -e "rds_engine=${{ needs.deploy-infrastructure.outputs.rds-engine }}" \
             -e "rds_engine_version=${{ needs.deploy-infrastructure.outputs.rds-engine-version }}" \
@@ -494,18 +494,18 @@ jobs:
             -e "cloudfront_status=${{ needs.deploy-infrastructure.outputs.cloudfront-status }}" \
             -e "vpc_id=${{ needs.deploy-infrastructure.outputs.vpc-id }}" \
             -e "vpc_cidr_block=${{ needs.deploy-infrastructure.outputs.vpc-cidr }}" \
-            -e "public_subnet_ids=${{ needs.deploy-infrastructure.outputs.public-subnet-ids }}" \
-            -e "private_subnet_ids_was=${{ needs.deploy-infrastructure.outputs.private-subnet-ids-was }}" \
-            -e "private_subnet_ids_db=${{ needs.deploy-infrastructure.outputs.private-subnet-ids-db }}" \
+            -e "public_subnet_ids='${{ needs.deploy-infrastructure.outputs.public-subnet-ids }}'" \
+            -e "private_subnet_ids_was='${{ needs.deploy-infrastructure.outputs.private-subnet-ids-was }}'" \
+            -e "private_subnet_ids_db='${{ needs.deploy-infrastructure.outputs.private-subnet-ids-db }}'" \
             -e "internet_gateway_id=${{ needs.deploy-infrastructure.outputs.internet-gateway-id }}" \
-            -e "nat_gateway_ids=${{ needs.deploy-infrastructure.outputs.nat-gateway-ids }}" \
+            -e "nat_gateway_ids='${{ needs.deploy-infrastructure.outputs.nat-gateway-ids }}'" \
             -e "security_group_alb_id=${{ needs.deploy-infrastructure.outputs.security-group-alb-id }}" \
             -e "security_group_was_id=${{ needs.deploy-infrastructure.outputs.security-group-was-id }}" \
             -e "security_group_db_id=${{ needs.deploy-infrastructure.outputs.security-group-db-id }}" \
-            -e "ec2_public_ips=${{ needs.deploy-infrastructure.outputs.ec2-public-ips }}" \
+            -e "ec2_public_ips='[]'" \
             -e "ec2_private_ips='${{ needs.deploy-infrastructure.outputs.ec2-private-ip-1 }},${{ needs.deploy-infrastructure.outputs.ec2-private-ip-2 }}'" \
-            -e "ec2_availability_zones=${{ needs.deploy-infrastructure.outputs.ec2-availability-zones }}" \
-            -e "ec2_instance_types=${{ needs.deploy-infrastructure.outputs.ec2-instance-types }}" \
+            -e "ec2_availability_zones='${{ needs.deploy-infrastructure.outputs.ec2-availability-zones }}'" \
+            -e "ec2_instance_types='${{ needs.deploy-infrastructure.outputs.ec2-instance-types }}'" \
             -e "ec2_ami_id=${{ needs.deploy-infrastructure.outputs.ec2-ami-id }}" \
             -v
 
