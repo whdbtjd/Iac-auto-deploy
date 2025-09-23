@@ -17,7 +17,7 @@ const EC2Dashboard = () => {
       setEC2Data(response.data);
       setError(null);
     } catch (err) {
-      console.error('EC2 정보 조회 실패:', err);
+      console.error('EC2 정보조회 실패:', err);
       setError('EC2 정보를 불러올 수 없습니다.');
     } finally {
       setLoading(false);
