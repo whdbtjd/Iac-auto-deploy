@@ -22,6 +22,7 @@ const ResourceDashboard = () => {
       setLoading(true);
       const response = await resourceAPI.getInfrastructureStatus();
       setInfraStatus(response.data);
+      console.log('인프라 상태 데이터:', response.data);
       setError(null);
     } catch (err) {
       console.error('인프라 상태 조회 실패:', err);
