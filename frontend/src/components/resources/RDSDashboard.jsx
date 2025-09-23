@@ -173,21 +173,6 @@ const RDSDashboard = () => {
                 </div>
               </div>
 
-              {rdsData.connectionString && (
-                <div className="connection-section">
-                  <h4>🔌 연결 문자열 예시</h4>
-                  <div className="connection-string">
-                    <code>{rdsData.connectionString}</code>
-                    <button 
-                      className="copy-btn"
-                      onClick={() => navigator.clipboard.writeText(rdsData.connectionString)}
-                      title="클립보드에 복사"
-                    >
-                      📋
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </div>

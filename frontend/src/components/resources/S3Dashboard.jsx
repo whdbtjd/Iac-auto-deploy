@@ -107,67 +107,6 @@ const S3Dashboard = () => {
                 </div>
               </div>
 
-              {s3Data.websiteHosting && s3Data.websiteEndpoint && (
-                <div className="website-section">
-                  <h4>🌐 웹사이트 호스팅</h4>
-                  <div className="website-info">
-                    <div className="endpoint-item">
-                      <span className="label">웹사이트 엔드포인트:</span>
-                      <div className="endpoint-value">
-                        <code>{s3Data.websiteEndpoint}</code>
-                        <button 
-                          className="open-btn"
-                          onClick={() => window.open(`http://${s3Data.websiteEndpoint}`, '_blank')}
-                          title="새 탭에서 열기"
-                        >
-                          🔗
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="permissions-section">
-                <h4>🔐 권한 및 보안</h4>
-                <div className="permissions-grid">
-                  <div className="permission-item">
-                    <div className="permission-header">
-                      <span className="permission-title">버킷 정책</span>
-                      <span className={`permission-status ${s3Data.bucketPolicy ? 'configured' : 'not-configured'}`}>
-                        {s3Data.bucketPolicy ? '✅ 구성됨' : '❌ 구성 안됨'}
-                      </span>
-                    </div>
-                    <div className="permission-description">
-                      버킷 수준의 액세스 권한 정책
-                    </div>
-                  </div>
-
-                  <div className="permission-item">
-                    <div className="permission-header">
-                      <span className="permission-title">ACL (Access Control List)</span>
-                      <span className={`permission-status ${s3Data.aclEnabled ? 'enabled' : 'disabled'}`}>
-                        {s3Data.aclEnabled ? '✅ 활성화' : '❌ 비활성화'}
-                      </span>
-                    </div>
-                    <div className="permission-description">
-                      객체 및 버킷 수준의 세분화된 권한
-                    </div>
-                  </div>
-
-                  <div className="permission-item">
-                    <div className="permission-header">
-                      <span className="permission-title">CORS 구성</span>
-                      <span className={`permission-status ${s3Data.corsEnabled ? 'configured' : 'not-configured'}`}>
-                        {s3Data.corsEnabled ? '✅ 구성됨' : '❌ 구성 안됨'}
-                      </span>
-                    </div>
-                    <div className="permission-description">
-                      Cross-Origin Resource Sharing 설정
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
