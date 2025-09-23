@@ -36,25 +36,42 @@ api.interceptors.response.use(
   }
 );
 
-// API 함수들
+// AWS 리소스 API 함수들
+export const resourceAPI = {
+  // 서버 연결 상태 확인
+  healthCheck: () => api.get('/resources/health'),
+  
+  // 연결 상태 확인 (지연 시간 포함)
+  getConnectionStatus: (delay = 0) => api.get(`/resources/connection-status?delay=${delay}`),
+  
+  // 인프라 전체 상태
+  getInfrastructureStatus: () => api.get('/resources/status'),
+  
+  // EC2 인스턴스 정보
+  getEC2Info: () => api.get('/resources/ec2'),
+  
+  // ALB 정보
+  getALBInfo: () => api.get('/resources/alb'),
+  
+  // RDS 정보
+  getRDSInfo: () => api.get('/resources/rds'),
+  
+  // S3 정보
+  getS3Info: () => api.get('/resources/s3'),
+  
+  // CloudFront 정보
+  getCloudFrontInfo: () => api.get('/resources/cloudfront'),
+  
+  // VPC 정보
+  getVPCInfo: () => api.get('/resources/vpc'),
+  
+  // 배포 진행상황
+  getDeploymentProgress: () => api.get('/resources/deployment-progress'),
+};
+
+// 이전 버전 호환을 위해 voteAPI도 유지 (healthCheck만)
 export const voteAPI = {
-  // 모든 투표 조회
-  getAllVotes: () => api.get('/votes'),
-  
-  // 특정 투표 조회
-  getVoteById: (id) => api.get(`/votes/${id}`),
-  
-  // 새 투표 생성
-  createVote: (voteData) => api.post('/votes', voteData),
-  
-  // 투표하기
-  castVote: (voteId, optionId) => api.post(`/votes/${voteId}/options/${optionId}`),
-  
-  // 투표 비활성화
-  deactivateVote: (id) => api.put(`/votes/${id}/deactivate`),
-  
-  // 헬스체크
-  healthCheck: () => api.get('/votes/health'),
+  healthCheck: () => resourceAPI.healthCheck(),
 };
 
 export default api;

@@ -49,3 +49,86 @@ cors:
     - https://*.cloudfront.net
   allowed-methods: GET,POST,PUT,DELETE,OPTIONS
   allowed-headers: "*"
+
+# AWS 리소스 설정 (Ansible/환경변수로 주입)
+aws:
+  resources:
+    ec2:
+      instance-ids: ${AWS_EC2_INSTANCE_IDS:}
+    alb:
+      dns-name: ${AWS_ALB_DNS_NAME:}
+      arn: ${AWS_ALB_ARN:}
+      target-group-name: ${AWS_ALB_TARGET_GROUP_NAME:}
+      listener-arn: ${AWS_ALB_LISTENER_ARN:}
+      availability-zones: ${AWS_ALB_AVAILABILITY_ZONES:}
+    rds:
+      endpoint: ${AWS_RDS_ENDPOINT:}
+      port: ${AWS_RDS_PORT:3306}
+      instance-identifier: ${AWS_RDS_INSTANCE_IDENTIFIER:}
+      engine: ${AWS_RDS_ENGINE:mysql}
+      engine-version: ${AWS_RDS_ENGINE_VERSION:8.0}
+      instance-class: ${AWS_RDS_INSTANCE_CLASS:}
+      availability-zone: ${AWS_RDS_AVAILABILITY_ZONE:}
+      multi-az: ${AWS_RDS_MULTI_AZ:false}
+    s3:
+      bucket-name: ${AWS_S3_BUCKET_NAME:}
+      region: ${AWS_S3_BUCKET_REGION:ap-northeast-2}
+      website-endpoint: ${AWS_S3_WEBSITE_ENDPOINT:}
+    cloudfront:
+      distribution-id: ${AWS_CLOUDFRONT_DISTRIBUTION_ID:}
+      domain-name: ${AWS_CLOUDFRONT_DOMAIN_NAME:}
+      status: ${AWS_CLOUDFRONT_STATUS:}
+    vpc:
+      vpc-id: ${AWS_VPC_ID:}
+      cidr-block: ${AWS_VPC_CIDR_BLOCK:}
+      public-subnet-ids: ${AWS_PUBLIC_SUBNET_IDS:}
+      private-subnet-ids-was: ${AWS_PRIVATE_SUBNET_IDS_WAS:}
+      private-subnet-ids-db: ${AWS_PRIVATE_SUBNET_IDS_DB:}
+      internet-gateway-id: ${AWS_INTERNET_GATEWAY_ID:}
+      nat-gateway-ids: ${AWS_NAT_GATEWAY_IDS:}
+    security-groups:
+      alb-id: ${AWS_SECURITY_GROUP_ALB_ID:}
+      was-id: ${AWS_SECURITY_GROUP_WAS_ID:}
+      db-id: ${AWS_SECURITY_GROUP_DB_ID:}
+    ec2-details:
+      public-ips: ${AWS_EC2_PUBLIC_IPS:}
+      private-ips: ${AWS_EC2_PRIVATE_IPS:}
+      availability-zones: ${AWS_EC2_AVAILABILITY_ZONES:}
+      instance-types: ${AWS_EC2_INSTANCE_TYPES:}
+      ami-id: ${AWS_EC2_AMI_ID:}
+
+# 데모 모드 설정 (실제 AWS 리소스가 없을 때 사용)
+demo:
+  mode:
+    enabled: ${DEMO_MODE:true}
+    # 데모 모드에서 사용할 가짜 데이터
+    fake-data:
+      ec2-instances:
+        - instance-id: "i-1234567890abcdef0"
+          name: "WAS-Instance-1"
+          instance-type: "t3.micro"
+          availability-zone: "ap-northeast-2a"
+          private-ip: "172.31.47.117"
+          state: "running"
+        - instance-id: "i-0987654321fedcba0"
+          name: "WAS-Instance-2" 
+          instance-type: "t3.micro"
+          availability-zone: "ap-northeast-2c"
+          private-ip: "172.31.40.58"
+          state: "running"
+      alb:
+        dns-name: "alb-web-1234567890.ap-northeast-2.elb.amazonaws.com"
+        state: "active"
+        target-groups: 2
+      rds:
+        endpoint: "rds-iac.cluster-xyz123.ap-northeast-2.rds.amazonaws.com"
+        engine: "mysql"
+        version: "8.0"
+        status: "available"
+      s3:
+        bucket-name: "frontend-web-abc123"
+        region: "ap-northeast-2"
+      cloudfront:
+        distribution-id: "E1234567890ABC"
+        domain-name: "d1234567890abc.cloudfront.net"
+        status: "Deployed"

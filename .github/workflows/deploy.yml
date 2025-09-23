@@ -47,6 +47,7 @@ jobs:
       github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     outputs:
+      # 기본 리소스 정보
       ec2-id-1: ${{ steps.terraform.outputs.ec2-id-1 }}
       ec2-id-2: ${{ steps.terraform.outputs.ec2-id-2 }}
       ec2-private-ip-1: ${{ steps.terraform.outputs.ec2-private-ip-1 }}
@@ -56,6 +57,36 @@ jobs:
       ssm-bucket: ${{ steps.terraform.outputs.ssm-bucket }}
       cloudfront-url: ${{ steps.terraform.outputs.cloudfront-url }}
       db-endpoint: ${{ steps.terraform.outputs.db-endpoint }}
+      
+      # 백엔드 API용 추가 정보들
+      vpc-id: ${{ steps.terraform.outputs.vpc-id }}
+      vpc-cidr: ${{ steps.terraform.outputs.vpc-cidr }}
+      public-subnet-ids: ${{ steps.terraform.outputs.public-subnet-ids }}
+      private-subnet-ids-was: ${{ steps.terraform.outputs.private-subnet-ids-was }}
+      private-subnet-ids-db: ${{ steps.terraform.outputs.private-subnet-ids-db }}
+      internet-gateway-id: ${{ steps.terraform.outputs.internet-gateway-id }}
+      nat-gateway-ids: ${{ steps.terraform.outputs.nat-gateway-ids }}
+      security-group-alb-id: ${{ steps.terraform.outputs.security-group-alb-id }}
+      security-group-was-id: ${{ steps.terraform.outputs.security-group-was-id }}
+      security-group-db-id: ${{ steps.terraform.outputs.security-group-db-id }}
+      ec2-public-ips: ${{ steps.terraform.outputs.ec2-public-ips }}
+      ec2-availability-zones: ${{ steps.terraform.outputs.ec2-availability-zones }}
+      ec2-instance-types: ${{ steps.terraform.outputs.ec2-instance-types }}
+      ec2-ami-id: ${{ steps.terraform.outputs.ec2-ami-id }}
+      alb-arn: ${{ steps.terraform.outputs.alb-arn }}
+      alb-availability-zones: ${{ steps.terraform.outputs.alb-availability-zones }}
+      alb-listener-arn: ${{ steps.terraform.outputs.alb-listener-arn }}
+      alb-target-group-name: ${{ steps.terraform.outputs.alb-target-group-name }}
+      rds-instance-identifier: ${{ steps.terraform.outputs.rds-instance-identifier }}
+      rds-availability-zone: ${{ steps.terraform.outputs.rds-availability-zone }}
+      rds-multi-az: ${{ steps.terraform.outputs.rds-multi-az }}
+      rds-engine: ${{ steps.terraform.outputs.rds-engine }}
+      rds-engine-version: ${{ steps.terraform.outputs.rds-engine-version }}
+      rds-instance-class: ${{ steps.terraform.outputs.rds-instance-class }}
+      s3-bucket-region: ${{ steps.terraform.outputs.s3-bucket-region }}
+      s3-website-endpoint: ${{ steps.terraform.outputs.s3-website-endpoint }}
+      cloudfront-distribution-id: ${{ steps.terraform.outputs.cloudfront-distribution-id }}
+      cloudfront-status: ${{ steps.terraform.outputs.cloudfront-status }}
     
     steps:
       - name: Checkout code
@@ -209,6 +240,7 @@ jobs:
         id: terraform
         working-directory: ./terraform
         run: |
+          # 기존 기본 정보들
           EC2_IDS=$(terraform output -json ec2_instance_ids)
           EC2_PRIVATE_IPS=$(terraform output -json ec2_private_ips)
         
@@ -222,7 +254,7 @@ jobs:
           echo "ec2-private-ip-1=$EC2_PRIVATE_IP_1" >> $GITHUB_OUTPUT
           echo "ec2-private-ip-2=$EC2_PRIVATE_IP_2" >> $GITHUB_OUTPUT
         
-          ALB_DNS=$(aws elbv2 describe-load-balancers --query 'LoadBalancers[0].DNSName' --output text)
+          ALB_DNS=$(terraform output -raw alb_dns_name || echo '')
           echo "alb-dns=$ALB_DNS" >> $GITHUB_OUTPUT
         
           echo "s3-bucket=$(terraform output -raw s3_bucket_name || echo '')" >> $GITHUB_OUTPUT
@@ -233,11 +265,49 @@ jobs:
           RDS_ENDPOINT=$(echo $RDS_ENDPOINT_RAW | cut -d':' -f1)
           echo "db-endpoint=$RDS_ENDPOINT" >> $GITHUB_OUTPUT
         
-          S3_BUCKET=$(terraform output -raw s3_bucket_name || echo '')
-          if [ -n "$S3_BUCKET" ]; then
-            CLOUDFRONT_URL=$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[0].DomainName=='$S3_BUCKET.s3.amazonaws.com'].DomainName" --output text)
-            echo "cloudfront-url=$CLOUDFRONT_URL" >> $GITHUB_OUTPUT
-          fi
+          echo "cloudfront-url=$(terraform output -raw cloudfront_domain_name || echo '')" >> $GITHUB_OUTPUT
+          
+          # 백엔드 API용 추가 정보들
+          echo "vpc-id=$(terraform output -raw vpc_id || echo '')" >> $GITHUB_OUTPUT
+          echo "vpc-cidr=$(terraform output -raw vpc_cidr_block || echo '')" >> $GITHUB_OUTPUT
+          echo "public-subnet-ids=$(terraform output -json public_subnet_ids || echo '[]')" >> $GITHUB_OUTPUT
+          echo "private-subnet-ids-was=$(terraform output -json private_subnet_ids_was || echo '[]')" >> $GITHUB_OUTPUT
+          echo "private-subnet-ids-db=$(terraform output -json private_subnet_ids_db || echo '[]')" >> $GITHUB_OUTPUT
+          echo "internet-gateway-id=$(terraform output -raw internet_gateway_id || echo '')" >> $GITHUB_OUTPUT
+          echo "nat-gateway-ids=$(terraform output -json nat_gateway_ids || echo '[]')" >> $GITHUB_OUTPUT
+          
+          # 보안 그룹 정보
+          echo "security-group-alb-id=$(terraform output -raw security_group_alb_id || echo '')" >> $GITHUB_OUTPUT
+          echo "security-group-was-id=$(terraform output -raw security_group_was_id || echo '')" >> $GITHUB_OUTPUT
+          echo "security-group-db-id=$(terraform output -raw security_group_db_id || echo '')" >> $GITHUB_OUTPUT
+          
+          # EC2 추가 정보
+          echo "ec2-public-ips=$(terraform output -json ec2_public_ips || echo '[]')" >> $GITHUB_OUTPUT
+          echo "ec2-availability-zones=$(terraform output -json ec2_availability_zones || echo '[]')" >> $GITHUB_OUTPUT
+          echo "ec2-instance-types=$(terraform output -json ec2_instance_types || echo '[]')" >> $GITHUB_OUTPUT
+          echo "ec2-ami-id=$(terraform output -raw ec2_ami_id || echo '')" >> $GITHUB_OUTPUT
+          
+          # ALB 추가 정보
+          echo "alb-arn=$(terraform output -raw alb_arn || echo '')" >> $GITHUB_OUTPUT
+          echo "alb-availability-zones=$(terraform output -json alb_availability_zones || echo '[]')" >> $GITHUB_OUTPUT
+          echo "alb-listener-arn=$(terraform output -raw alb_listener_arn || echo '')" >> $GITHUB_OUTPUT
+          echo "alb-target-group-name=$(terraform output -raw alb_target_group_name || echo '')" >> $GITHUB_OUTPUT
+          
+          # RDS 추가 정보
+          echo "rds-instance-identifier=$(terraform output -raw rds_instance_identifier || echo '')" >> $GITHUB_OUTPUT
+          echo "rds-availability-zone=$(terraform output -raw rds_availability_zone || echo '')" >> $GITHUB_OUTPUT
+          echo "rds-multi-az=$(terraform output -raw rds_multi_az || echo '')" >> $GITHUB_OUTPUT
+          echo "rds-engine=$(terraform output -raw rds_engine || echo '')" >> $GITHUB_OUTPUT
+          echo "rds-engine-version=$(terraform output -raw rds_engine_version || echo '')" >> $GITHUB_OUTPUT
+          echo "rds-instance-class=$(terraform output -raw rds_instance_class || echo '')" >> $GITHUB_OUTPUT
+          
+          # S3 추가 정보
+          echo "s3-bucket-region=$(terraform output -raw s3_bucket_region || echo '')" >> $GITHUB_OUTPUT
+          echo "s3-website-endpoint=$(terraform output -raw s3_website_endpoint || echo '')" >> $GITHUB_OUTPUT
+          
+          # CloudFront 추가 정보
+          echo "cloudfront-distribution-id=$(terraform output -raw cloudfront_distribution_id || echo '')" >> $GITHUB_OUTPUT
+          echo "cloudfront-status=$(terraform output -raw cloudfront_status || echo '')" >> $GITHUB_OUTPUT
 
   # 서버 설정 (Ansible + SSM) - community.aws.aws_ssm 플러그인 방식
   setup-servers:
@@ -379,40 +449,49 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Create application.yml template
-        working-directory: ./ansible/templates
+      - name: Deploy configuration via Ansible
+        working-directory: ./ansible
         run: |
-          cat > application.yaml.j2 << EOF
-          spring:
-            datasource:
-              url: jdbc:mysql://${{ needs.deploy-infrastructure.outputs.db-endpoint }}:3306/voting_db
-              username: ${{ secrets.DB_USERNAME }}
-              password: ${{ secrets.DB_PASSWORD }}
-              driver-class-name: com.mysql.cj.jdbc.Driver
-            jpa:
-              hibernate:
-                ddl-auto: update
-              show-sql: false
-              database-platform: org.hibernate.dialect.MySQLDialect
-            application:
-              name: voting-system
-          server:
-            port: 8080
-          management:
-            endpoints:
-              web:
-                exposure:
-                  include: health,info
-            endpoint:
-              health:
-                show-details: always
-          logging:
-            level:
-              org.springframework: INFO
-              org.hibernate: WARN
-            file:
-              name: /opt/app/voting-app.log
-          EOF
+          ansible-playbook -i inventory.ini playbooks/db-config.yaml \
+            -e "rds_endpoint=${{ needs.deploy-infrastructure.outputs.db-endpoint }}" \
+            -e "rds_port=3306" \
+            -e "database_name=voting_db" \
+            -e "db_username=${{ secrets.DB_USERNAME }}" \
+            -e "db_password=${{ secrets.DB_PASSWORD }}" \
+            -e "ec2_instance_ids='${{ needs.deploy-infrastructure.outputs.ec2-id-1 }},${{ needs.deploy-infrastructure.outputs.ec2-id-2 }}'" \
+            -e "alb_dns_name=${{ needs.deploy-infrastructure.outputs.alb-dns }}" \
+            -e "alb_arn=${{ needs.deploy-infrastructure.outputs.alb-arn }}" \
+            -e "alb_target_group_name=${{ needs.deploy-infrastructure.outputs.alb-target-group-name }}" \
+            -e "alb_listener_arn=${{ needs.deploy-infrastructure.outputs.alb-listener-arn }}" \
+            -e "alb_availability_zones=${{ needs.deploy-infrastructure.outputs.alb-availability-zones }}" \
+            -e "rds_instance_identifier=${{ needs.deploy-infrastructure.outputs.rds-instance-identifier }}" \
+            -e "rds_engine=${{ needs.deploy-infrastructure.outputs.rds-engine }}" \
+            -e "rds_engine_version=${{ needs.deploy-infrastructure.outputs.rds-engine-version }}" \
+            -e "rds_instance_class=${{ needs.deploy-infrastructure.outputs.rds-instance-class }}" \
+            -e "rds_availability_zone=${{ needs.deploy-infrastructure.outputs.rds-availability-zone }}" \
+            -e "rds_multi_az=${{ needs.deploy-infrastructure.outputs.rds-multi-az }}" \
+            -e "s3_bucket_name=${{ needs.deploy-infrastructure.outputs.s3-bucket }}" \
+            -e "s3_bucket_region=${{ needs.deploy-infrastructure.outputs.s3-bucket-region }}" \
+            -e "s3_website_endpoint=${{ needs.deploy-infrastructure.outputs.s3-website-endpoint }}" \
+            -e "cloudfront_distribution_id=${{ needs.deploy-infrastructure.outputs.cloudfront-distribution-id }}" \
+            -e "cloudfront_domain_name=${{ needs.deploy-infrastructure.outputs.cloudfront-url }}" \
+            -e "cloudfront_status=${{ needs.deploy-infrastructure.outputs.cloudfront-status }}" \
+            -e "vpc_id=${{ needs.deploy-infrastructure.outputs.vpc-id }}" \
+            -e "vpc_cidr_block=${{ needs.deploy-infrastructure.outputs.vpc-cidr }}" \
+            -e "public_subnet_ids=${{ needs.deploy-infrastructure.outputs.public-subnet-ids }}" \
+            -e "private_subnet_ids_was=${{ needs.deploy-infrastructure.outputs.private-subnet-ids-was }}" \
+            -e "private_subnet_ids_db=${{ needs.deploy-infrastructure.outputs.private-subnet-ids-db }}" \
+            -e "internet_gateway_id=${{ needs.deploy-infrastructure.outputs.internet-gateway-id }}" \
+            -e "nat_gateway_ids=${{ needs.deploy-infrastructure.outputs.nat-gateway-ids }}" \
+            -e "security_group_alb_id=${{ needs.deploy-infrastructure.outputs.security-group-alb-id }}" \
+            -e "security_group_was_id=${{ needs.deploy-infrastructure.outputs.security-group-was-id }}" \
+            -e "security_group_db_id=${{ needs.deploy-infrastructure.outputs.security-group-db-id }}" \
+            -e "ec2_public_ips=${{ needs.deploy-infrastructure.outputs.ec2-public-ips }}" \
+            -e "ec2_private_ips='${{ needs.deploy-infrastructure.outputs.ec2-private-ip-1 }},${{ needs.deploy-infrastructure.outputs.ec2-private-ip-2 }}'" \
+            -e "ec2_availability_zones=${{ needs.deploy-infrastructure.outputs.ec2-availability-zones }}" \
+            -e "ec2_instance_types=${{ needs.deploy-infrastructure.outputs.ec2-instance-types }}" \
+            -e "ec2_ami_id=${{ needs.deploy-infrastructure.outputs.ec2-ami-id }}" \
+            -v
 
       - name: Prepare JAR file for Ansible
         working-directory: ./ansible
@@ -436,15 +515,6 @@ jobs:
           ansible_aws_ssm_retries=3
           EOF
 
-      - name: Deploy configuration via Ansible
-        working-directory: ./ansible
-        run: |
-          ansible-playbook -i inventory.ini playbooks/db-config.yaml \
-            -e "rds_host=${{ needs.deploy-infrastructure.outputs.db-endpoint }}" \
-            -e "db_user=${{ secrets.DB_USERNAME }}" \
-            -e "db_password=${{ secrets.DB_PASSWORD }}" \
-            -e "db_name=voting_db" \
-            -v
 
       - name: Deploy JAR via Ansible
         working-directory: ./ansible
