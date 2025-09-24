@@ -781,7 +781,7 @@ public class AwsResourceService {
                     .state("available")
                     .mapPublicIpOnLaunch(true)
                     .availableIpAddressCount(245 - i * 2)
-                    .name("public-subnet-" + (i + 1))
+                    .name("pub-sub-" + (i + 1))
                     .subnetType("public")
                     .build());
         }
@@ -795,7 +795,7 @@ public class AwsResourceService {
                     .state("available")
                     .mapPublicIpOnLaunch(false)
                     .availableIpAddressCount(249 - i)
-                    .name("private-subnet-was-" + (i + 1))
+                    .name("pri-sub-was-" + (i + 1))
                     .subnetType("private")
                     .build());
         }
@@ -809,7 +809,7 @@ public class AwsResourceService {
                     .state("available")
                     .mapPublicIpOnLaunch(false)
                     .availableIpAddressCount(252 - i)
-                    .name("private-subnet-db-" + (i + 1))
+                    .name("pri-sub-db-" + (i + 1))
                     .subnetType("private")
                     .build());
         }
