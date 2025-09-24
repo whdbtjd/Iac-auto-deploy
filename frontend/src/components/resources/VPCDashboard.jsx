@@ -40,18 +40,22 @@ const VPCDashboard = () => {
     }
   };
 
-  const getDefaultSubnetName = (index) => {
-    // Terraform에서 설정한 서브넷 이름들
-    const subnetNames = [
-      'pub-sub-1',      // 퍼블릭 서브넷 1
-      'pub-sub-2',      // 퍼블릭 서브넷 2
-      'pri-sub-was-1',  // 프라이빗 서브넷 WAS 1
-      'pri-sub-was-2',  // 프라이빗 서브넷 WAS 2
-      'pri-sub-db-1',   // 프라이빗 서브넷 DB 1
-      'pri-sub-db-2'    // 프라이빗 서브넷 DB 2
-    ];
+  const getDefaultSubnetName = (subnet) => {
+    // 서브넷 타입과 CIDR 블록으로 매핑
+    const cidrBlock = subnet.cidrBlock;
+    const subnetType = subnet.subnetType?.toLowerCase();
     
-    return subnetNames[index] || `Subnet ${index + 1}`;
+    if (subnetType === 'public') {
+      if (cidrBlock?.includes('10.0.0.')) return 'pub-sub-1';
+      if (cidrBlock?.includes('10.0.1.')) return 'pub-sub-2';
+    } else if (subnetType === 'private') {
+      if (cidrBlock?.includes('10.0.10.')) return 'pri-sub-was-1';
+      if (cidrBlock?.includes('10.0.11.')) return 'pri-sub-was-2';
+      if (cidrBlock?.includes('10.0.20.')) return 'pri-sub-db-1';
+      if (cidrBlock?.includes('10.0.21.')) return 'pri-sub-db-2';
+    }
+    
+    return subnet.name || `Subnet ${subnet.subnetId?.slice(-4)}`;
   };
 
   if (loading) {
@@ -158,7 +162,7 @@ const VPCDashboard = () => {
                       <div className="subnet-info">
                         <h4>
                           {getSubnetTypeIcon(subnet.subnetType)} 
-                          {subnet.name || getDefaultSubnetName(index)}
+                          {subnet.name || getDefaultSubnetName(subnet)}
                         </h4>
                       </div>
                       <span 
