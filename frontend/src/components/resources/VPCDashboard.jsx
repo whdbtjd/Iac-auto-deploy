@@ -40,6 +40,20 @@ const VPCDashboard = () => {
     }
   };
 
+  const getDefaultSubnetName = (index) => {
+    // Terraform에서 설정한 서브넷 이름들
+    const subnetNames = [
+      'pub-sub-1',      // 퍼블릭 서브넷 1
+      'pub-sub-2',      // 퍼블릭 서브넷 2
+      'pri-sub-was-1',  // 프라이빗 서브넷 WAS 1
+      'pri-sub-was-2',  // 프라이빗 서브넷 WAS 2
+      'pri-sub-db-1',   // 프라이빗 서브넷 DB 1
+      'pri-sub-db-2'    // 프라이빗 서브넷 DB 2
+    ];
+    
+    return subnetNames[index] || `Subnet ${index + 1}`;
+  };
+
   if (loading) {
     return (
       <div className="loading-container">
@@ -144,9 +158,8 @@ const VPCDashboard = () => {
                       <div className="subnet-info">
                         <h4>
                           {getSubnetTypeIcon(subnet.subnetType)} 
-                          {subnet.name || `Subnet ${index + 1}`}
+                          {subnet.name || getDefaultSubnetName(index)}
                         </h4>
-                        <span className="subnet-id">{subnet.subnetId}</span>
                       </div>
                       <span 
                         className="subnet-type-badge"
