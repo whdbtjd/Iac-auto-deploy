@@ -17,7 +17,7 @@ const S3Dashboard = () => {
       setS3Data(response.data);
       setError(null);
     } catch (err) {
-      console.error('S3 정보 조회 실패:', err);
+      console.error('S3 정보조회 실패:', err);
       setError('S3 정보를 불러올 수 없습니다.ㅇ');
     } finally {
       setLoading(false);
