@@ -22,7 +22,7 @@ public class ResourceController {
     private final AwsResourceService awsResourceService;
 
     /**
-     * 전체 인프라 상태 조회 (데모용 메인 API)ㅁㄴddasdfd
+     * 전체 인프라 상태 조회 (데모용 메인 API)ㅁㄴddasdfdasdf
      */
     @GetMapping("/status")
     public ResponseEntity<InfrastructureStatusResponse> getInfrastructureStatus() {
