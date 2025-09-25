@@ -18,8 +18,8 @@ resource "aws_wafv2_web_acl" "cloudfront_waf" {
     name     = "RateLimitRule"
     priority = 1
 
-    override_action {
-      none {}
+    action {
+      block {}
     }
 
     statement {
