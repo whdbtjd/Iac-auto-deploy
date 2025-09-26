@@ -603,7 +603,7 @@ public class AwsResourceService {
         List<String> instanceTypes = ec2InstanceTypes.isEmpty() ? 
             Arrays.asList("t3.micro", "t3.micro") : ec2InstanceTypes;
         List<String> availabilityZones = ec2AvailabilityZones.isEmpty() ? 
-            Arrays.asList("ap-northeast-2a", "ap-northeast-2c") : ec2AvailabilityZones;
+            Arrays.asList("ap-northeast-2a", "ap-northeast-2b") : ec2AvailabilityZones;
         String amiId = ec2AmiId.isEmpty() ? "ami-0ea4d4b8dc1e46212" : ec2AmiId;
 
         for (int i = 0; i < instanceIds.size(); i++) {
