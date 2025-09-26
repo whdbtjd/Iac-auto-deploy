@@ -19,7 +19,7 @@
 
 ### 💡 시스템 사용 가이드
 
-* **백엔드 자동 배포**: `backend/` 디렉토리 내 Spring Boot 코드를 수정 후 푸시하면 JAR 빌드 및 EC2 무중단 배포 자동 실행
+* **백엔드 자동 배포**: `backend/` 디렉토리 내 Spring Boot 코드를 수정 후 푸시하면 JAR 빌드 및 EC2 배포 자동 실행
 * **프론트엔드 자동 배포**: `frontend/` 디렉토리 내 React/Vue 코드를 수정 후 푸시하면 빌드 후 S3 + CloudFront 자동 배포
 * **인프라 변경**: `terraform/` 또는 `ansible/` 디렉토리 수정 시 해당 인프라 구성요소만 선택적 재배포
 * **조건부 배포**: GitHub Actions가 변경된 디렉토리를 자동 감지하여 필요한 부분만 배포로 시간과 비용 최적화
@@ -105,7 +105,7 @@ external:
   * 플레이북 구성:
     * `setup-service.yaml`: 서버 초기 설정, MySQL 클라이언트 설치, systemd 서비스 등록
     * `db-config.yaml`: RDS 연결 설정, application.yml 템플릿 배포
-    * `jar-deploy.yaml`: Spring Boot JAR 파일 무중단 배포 및 서비스 재시작
+    * `jar-deploy.yaml`: Spring Boot JAR 파일 배포 및 서비스 재시작
     * `health-check.yaml`: 애플리케이션 헬스 체크 및 상태 확인
   * 연결 방식: AWS SSM Session Manager를 통한 에이전트리스 서버 접속
   * 템플릿: `application.yaml.j2` - Jinja2 기반 Spring Boot 설정 파일 동적 생성
@@ -120,7 +120,7 @@ external:
     1. `detect-changes`: 코드 변경사항 분석
     2. `deploy-infrastructure`: Terraform을 통한 AWS 리소스 프로비저닝
     3. `setup-servers`: Ansible을 통한 서버 환경 구성
-    4. `deploy-backend`: JAR 빌드 및 무중단 배포
+    4. `deploy-backend`: JAR 빌드 및 배포
     5. `deploy-frontend`: React/Vue 빌드 및 S3 동기화
     6. `deployment-complete`: 배포 결과 요약 및 서비스 URL 출력
 
@@ -221,7 +221,7 @@ external:
 ### 4주차 (9월 중순): Ansible 자동화 및 CI/CD 파이프라인
 
 * Ansible 플레이북 개발 (서버 설정, 애플리케이션 배포)
-* SSM 기반 서버 접속 및 무중단 배포 로직 구현
+* SSM 기반 서버 접속 및 배포 로직 구현
 * GitHub Actions 워크플로우 설계
 * 조건부 배포 로직 구현 (프론트/백엔드 변경 감지)
 
