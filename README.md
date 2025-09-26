@@ -67,7 +67,7 @@ DevOpser
   * WAF를 통한 Rate Limiting 및 접근 제어 정책 적용
 
 <details>
-<summary>📌 ###추가 환경변수 설정 가이드</summary>
+<summary><h3><b>📌 추가 환경변수 설정 가이드</b></h3></summary>
 
 ### 📝 개요
 
