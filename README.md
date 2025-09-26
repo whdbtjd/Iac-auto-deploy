@@ -2,9 +2,9 @@
 
 ## 1. 팀 이름
 
-**DevOpser**
+DevOpser
 
-본 프로젝트가 데브옵스의 성격을 띄고 있어서, 팀 이름을 **데브옵서(DevOpser)**로 선정하였습니다.
+본 프로젝트가 데브옵스의 성격을 띄고 있어서, 팀 이름을 데브옵서(DevOpser)로 선정하였습니다.
 
 <br>
 
@@ -17,7 +17,7 @@
 * 코드 푸시만으로 인프라 생성부터 애플리케이션 배포까지 수행 가능
 * 프론트엔드와 백엔드를 동시에 지원하는 풀스택 배포 환경 제공
 
-  <details>
+<details>
 <summary><h3><b>📌 추가 환경변수 설정 가이드</b></h3></summary>
 
 ### 📝 개요
@@ -67,7 +67,6 @@ external:
     payment-api: {{ my_api_key | default('') }}
     notification-url: {{ custom_endpoint | default('') }}
 ```
-
 </details>
 
 <br>
@@ -123,8 +122,6 @@ external:
   * CloudFront 기반 HTTPS 통신 적용 및 Origin Access Control 구성
   * WAF를 통한 Rate Limiting 및 접근 제어 정책 적용
 
-
-
 <br>
 
 ## 4. 이용 기술
@@ -138,27 +135,39 @@ external:
 
 <br>
 
-## 5. 개발하는 작품의 특징
+## 5. 아키텍처
 
 ### 전체 아키텍처
 
 <img width="1931" height="941" alt="전체 아키텍처" src="https://github.com/user-attachments/assets/9cf14b51-849e-4d41-a725-e4d2156a59fb" />
 
+<br>
+
 ### 프론트엔드 세부 아키텍처
 
 <img width="1205" height="381" alt="프론트 아키 drawio (1)" src="https://github.com/user-attachments/assets/643b977e-d6d6-4298-b7b7-8be7f726c7e7" />
 
+<br>
+
+## 6. 개발하는 작품의 특징
+
 * **조건부 배포**: 프론트/백엔드 코드 변경에 따라 서로 다른 배포 파이프라인 동작
+
 * **코드 기반 인프라 관리**: 모든 인프라 설정을 코드로 관리하여 일관성 보장
+
 * **모듈화 설계**: Terraform과 Ansible을 독립적으로 구성 및 실행
+
 * **아키텍처**: 3-Tier 구조(Web – WAS – DB) 적용으로 확장성과 유지보수성 확보
+
 * **네트워크**: VPC 기반 프라이빗 서브넷 구성으로 보안성 강화
+
 * **보안**: SSM Session Manager로 SSH 키 관리 불필요, CloudFront HTTPS 및 Origin 설정 적용
+
 * **인프라 관리**: Terraform State를 통한 인프라 변경사항 추적 및 이력 관리
 
 <br>
 
-## 6. 개발 방법
+## 7. 개발 방법
 
 ### 오픈 소스 및 라이브러리 활용
 
@@ -177,7 +186,7 @@ external:
 
 <br>
 
-## 7. 개발 일정
+## 8. 개발 일정
 
 ### 1~2주차 (8월 말 ~ 9월 초): 기반 인프라 구축
 
@@ -213,7 +222,7 @@ external:
 
 <br>
 
-## 8. 참여 인력
+## 9. 참여 인력
 
 **조유성** – DevOps Engineer & Full-Stack Developer
 
