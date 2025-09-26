@@ -102,10 +102,6 @@ const EC2Dashboard = () => {
                   <span className="value">{instance.instanceType || 'N/A'}</span>
                 </div>
                 <div className="info-item">
-                  <span className="label">가용 영역:</span>
-                  <span className="value">{instance.availabilityZone || 'N/A'}</span>
-                </div>
-                <div className="info-item">
                   <span className="label">Private IP:</span>
                   <span className="value ip-address">{instance.privateIp || 'N/A'}</span>
                 </div>
