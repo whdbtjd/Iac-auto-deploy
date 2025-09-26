@@ -132,11 +132,10 @@ external:
 ## 5. 개발하는 작품의 특징
 
 ### 전체 아키텍처
-<img width="1931" height="941" alt="경진대회 발표용 drawio (4)" src="https://github.com/user-attachments/assets/9cf14b51-849e-4d41-a725-e4d2156a59fb" />  
+<img width="1931" height="941" alt="전체 아키텍처" src="https://github.com/user-attachments/assets/9cf14b51-849e-4d41-a725-e4d2156a59fb" />  
 
 ### 프론트엔드 세부 아키텍처
 [프론트 아키 (1).drawio](https://github.com/user-attachments/files/22553788/1.drawio)  
-<mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/></root></mxGraphModel>
 
 * 조건부 배포: 프론트/백엔드 코드 변경에 따라 서로 다른 배포 파이프라인 동작  
 * 코드 기반 인프라 관리: 모든 인프라 설정을 코드로 관리하여 일관성 보장  
@@ -145,6 +144,7 @@ external:
 * 네트워크: VPC 기반 프라이빗 서브넷 구성으로 보안성 강화  
 * 보안: SSM Session Manager로 SSH 키 관리 불필요, CloudFront HTTPS 및 Origin 설정 적용  
 * 인프라 관리: Terraform State를 통한 인프라 변경사항 추적 및 이력 관리  
+
 
 
 ## 6. 개발 방법
