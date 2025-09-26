@@ -2,9 +2,9 @@
 
 ## 1. 팀 이름
 
-DevOpser
+**DevOpser**
 
-본 프로젝트가 데브옵스의 성격을 띄고 있어서, 팀 이름을 데브옵서(DevOpser)로 선정하였습니다.
+본 프로젝트가 데브옵스의 성격을 띄고 있어서, 팀 이름을 **데브옵서(DevOpser)**로 선정하였습니다.
 
 <br>
 
@@ -168,10 +168,15 @@ external:
 <br>
 
 ## 7. 대시보드 구성
-<img width="1780" height="967" alt="image" src="https://github.com/user-attachments/assets/5d848ea0-718a-40ed-aa83-9e5b1d2016df" />
-<img width="1280" height="564" alt="image" src="https://github.com/user-attachments/assets/47c2eef1-6c76-424a-a7e6-5c63fd3bc76e" />
 
+애플리케이션 배포 상태와 인프라 리소스 정보를 실시간으로 확인할 수 있는 모니터링 웹사이트를 시연용으로 구현하였습니다. Terraform outputs을 기반으로 AWS 리소스 상태를 시각화하여 배포가 정상적으로 완료되었는지 비교 검증할 수 있습니다.
 
+| 메인 대시보드 | 상세 리소스 정보 |
+|:---:|:---:|
+| <img width="890" height="483" alt="메인 대시보드" src="https://github.com/user-attachments/assets/5d848ea0-718a-40ed-aa83-9e5b1d2016df" /> | <img width="640" height="282" alt="상세 리소스 정보" src="https://github.com/user-attachments/assets/47c2eef1-6c76-424a-a7e6-5c63fd3bc76e" /> |
+| **인프라 전체 현황 한눈에 보기**<br>• EC2, RDS, ALB, S3, CloudFront 상태<br>• 배포 성공/실패 현황<br>• 서비스 URL 접근 링크 | **개별 리소스 세부 정보**<br>• 각 리소스의 상세 설정값<br>• 네트워크 구성 정보<br>• 보안 그룹 및 엔드포인트 현황 |
+
+<br>
 
 ## 8. 개발 방법
 
