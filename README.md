@@ -2,7 +2,7 @@
 
 ## 1. 팀 이름
 
-DevOpser
+**DevOpser**
 
 본 프로젝트가 데브옵스의 성격을 띄고 있어서, 팀 이름을 데브옵서(DevOpser)로 선정하였습니다.
 
@@ -167,7 +167,21 @@ external:
 
 <br>
 
-## 7. 개발 방법
+
+## 7. 대시보드 구성  
+
+애플리케이션 배포 상태와 인프라 리소스 정보를 실시간으로 확인할 수 있는 모니터링 웹사이트를 시연용으로 구현하였습니다.  
+Terraform outputs을 기반으로 AWS 리소스 상태를 시각화하여 배포가 정상적으로 완료되었는지 비교 검증할 수 있습니다.  
+
+| 메인 대시보드 | 상세 리소스 정보 |
+|:---:|:---:|
+| <img width="1816" height="1370" alt="image" src="https://github.com/user-attachments/assets/c3449117-14ed-4d87-a669-2cafc425fdcf" /> | <img width="1653" height="536" alt="image" src="https://github.com/user-attachments/assets/0e3b92a6-8331-41a6-bdac-d121b5ba8724" /> |
+| **인프라 전체 현황 한눈에 보기**<br>• EC2, RDS, ALB, S3, CloudFront 상태<br>• 배포 성공/실패 현황<br>• 서비스 URL 접근 링크 | **개별 리소스 세부 정보**<br>• 각 리소스의 상세 설정값<br>• 네트워크 구성 정보<br>• 보안 그룹 및 엔드포인트 현황 |
+
+
+<br>
+
+## 8. 개발 방법
 
 ### 오픈 소스 및 라이브러리 활용
 
@@ -186,7 +200,7 @@ external:
 
 <br>
 
-## 8. 개발 일정
+## 9. 개발 일정
 
 ### 1~2주차 (8월 말 ~ 9월 초): 기반 인프라 구축
 
@@ -222,7 +236,7 @@ external:
 
 <br>
 
-## 9. 참여 인력
+## 10. 참여 인력
 
 **조유성** – DevOps Engineer & Full-Stack Developer
 
