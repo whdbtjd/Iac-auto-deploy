@@ -122,7 +122,6 @@ DevOpser
   * Spring Boot 백엔드 API 개발 (비즈니스 로직 + 헬스체크)
   * React/Vue 프론트엔드 개발
   * Terraform outputs 기반 리소스 상태 대시보드 개발
-  * 실시간 메트릭 시각화 및 인프라 상태 모니터링 대시보드 개발
 
 ## 8. 참여 인력
 
