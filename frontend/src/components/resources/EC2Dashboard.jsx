@@ -123,24 +123,6 @@ const EC2Dashboard = () => {
                   <span className="label">아키텍처:</span>
                   <span className="value">{instance.architecture || 'N/A'}</span>
                 </div>
-                <div className="info-item">
-                  <span className="label">시작 시간:</span>
-                  <span className="value">
-                    {instance.launchTime ? 
-                      new Date(instance.launchTime).toLocaleString('ko-KR') : 
-                      'N/A'
-                    }
-                  </span>
-                </div>
-                <div className="info-item">
-                  <span className="label">업타임:</span>
-                  <span className="value">
-                    {instance.uptimeMinutes ? 
-                      `${Math.floor(instance.uptimeMinutes / 60)}시간 ${instance.uptimeMinutes % 60}분` : 
-                      'N/A'
-                    }
-                  </span>
-                </div>
               </div>
 
               {instance.tags && Object.keys(instance.tags).length > 0 && (
