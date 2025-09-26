@@ -213,10 +213,23 @@ external:
 
 <br>
 
-| 메인 대시보드 | 상세 리소스 정보 |
-|:---:|:---:|
-|<img width="1833" height="1375" alt="image" src="https://github.com/user-attachments/assets/5ad76a47-fdfc-48f9-b8a4-7a683710077b" />| <img width="640" height="282" alt="상세 리소스 정보" src="https://github.com/user-attachments/assets/47c2eef1-6c76-424a-a7e6-5c63fd3bc76e" /> |
-| **인프라 전체 현황 한눈에 보기**<br>• EC2, RDS, ALB, S3, CloudFront 상태<br>• 배포 성공/실패 현황<br>• 서비스 URL 접근 링크 | **개별 리소스 세부 정보**<br>• 각 리소스의 상세 설정값<br>• 네트워크 구성 정보<br>• 보안 그룹 및 엔드포인트 현황 |
+### 메인 대시보드
+<img width="1833" height="1375" alt="메인 대시보드" src="https://github.com/user-attachments/assets/5ad76a47-fdfc-48f9-b8a4-7a683710077b" />
+
+**인프라 전체 현황 한눈에 보기**
+• EC2, RDS, ALB, S3, CloudFront 상태
+• 배포 성공/실패 현황
+• 서비스 URL 접근 링크
+
+<br>
+
+### 상세 리소스 정보
+<img width="640" height="282" alt="상세 리소스 정보" src="https://github.com/user-attachments/assets/47c2eef1-6c76-424a-a7e6-5c63fd3bc76e" />
+
+**개별 리소스 세부 정보**
+• 각 리소스의 상세 설정값
+• 네트워크 구성 정보
+• 보안 그룹 및 엔드포인트 현황
 
 <br><br><br>
 
