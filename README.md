@@ -12,7 +12,6 @@ DevOpser
 
 ## 3. 작품 구성
 
-<img width="1931" height="941" alt="경진대회 발표용 drawio (4)" src="https://github.com/user-attachments/assets/9cf14b51-849e-4d41-a725-e4d2156a59fb" />  
 
 * **Frontend**: React/Vue 기반 정적 웹사이트 (S3 + CloudFront 자동 배포)
 * **Backend**: Spring Boot 기반 API 서버 (EC2 + ALB + RDS 자동 구축)
@@ -130,6 +129,8 @@ external:
 * Dev Tools: Spring Boot, React/Vue
 
 ## 5. 개발하는 작품의 특징
+<img width="1931" height="941" alt="경진대회 발표용 drawio (4)" src="https://github.com/user-attachments/assets/9cf14b51-849e-4d41-a725-e4d2156a59fb" />  
+
 
 * 조건부 배포: 프론트/백엔드 코드 변경에 따라 서로 다른 배포 파이프라인 동작
 * 코드 기반 인프라 관리: 모든 인프라 설정을 코드로 관리하여 일관성 보장
