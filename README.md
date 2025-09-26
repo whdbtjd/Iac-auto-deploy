@@ -17,7 +17,7 @@
 * 코드 푸시만으로 인프라 생성부터 애플리케이션 배포까지 수행 가능
 * 프론트엔드와 백엔드를 동시에 지원하는 풀스택 배포 환경 제공
 
-  <details>
+<details>
 <summary><h3><b>📌 추가 환경변수 설정 가이드</b></h3></summary>
 
 ### 📝 개요
@@ -67,7 +67,6 @@ external:
     payment-api: {{ my_api_key | default('') }}
     notification-url: {{ custom_endpoint | default('') }}
 ```
-
 </details>
 
 <br>
@@ -122,8 +121,6 @@ external:
   * AWS SSM Session Manager 기반 안전한 서버 접속 (SSH 키 관리 불필요)
   * CloudFront 기반 HTTPS 통신 적용 및 Origin Access Control 구성
   * WAF를 통한 Rate Limiting 및 접근 제어 정책 적용
-
-
 
 <br>
 
