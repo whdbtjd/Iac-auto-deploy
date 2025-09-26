@@ -116,7 +116,7 @@ external:
 
 <br>
 
-* **Infrastructure (Terraform)**
+* **Terraform**
   * 파일 구성:
     * `provider.tf`: AWS 프로바이더 설정 (ap-northeast-2 리전)
     * `backend.tf`: Terraform State 파일 S3 원격 저장소 구성
@@ -135,7 +135,7 @@ external:
 
 <br>
 
-* **Configuration Management (Ansible)**
+* **Ansible**
   * 플레이북 구성:
     * `setup-service.yaml`: 서버 초기 설정, MySQL 클라이언트 설치, systemd 서비스 등록
     * `db-config.yaml`: RDS 연결 설정, application.yml 템플릿 배포
