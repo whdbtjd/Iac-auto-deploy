@@ -135,7 +135,8 @@ external:
 <img width="1931" height="941" alt="전체 아키텍처" src="https://github.com/user-attachments/assets/9cf14b51-849e-4d41-a725-e4d2156a59fb" />  
 
 ### 프론트엔드 세부 아키텍처
-[프론트 아키 (1).drawio](https://github.com/user-attachments/files/22553788/1.drawio)  
+<img width="1205" height="381" alt="프론트 아키 drawio (1)" src="https://github.com/user-attachments/assets/643b977e-d6d6-4298-b7b7-8be7f726c7e7" />
+
 
 * 조건부 배포: 프론트/백엔드 코드 변경에 따라 서로 다른 배포 파이프라인 동작  
 * 코드 기반 인프라 관리: 모든 인프라 설정을 코드로 관리하여 일관성 보장  
