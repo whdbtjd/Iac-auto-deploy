@@ -12,6 +12,8 @@ DevOpser
 
 ## 3. 작품 구성
 
+<img width="1931" height="941" alt="경진대회 발표용 drawio (4)" src="https://github.com/user-attachments/assets/9cf14b51-849e-4d41-a725-e4d2156a59fb" />  
+
 * **Frontend**: React/Vue 기반 정적 웹사이트 (S3 + CloudFront 자동 배포)
 * **Backend**: Spring Boot 기반 API 서버 (EC2 + ALB + RDS 자동 구축)
 * **Infrastructure (Terraform)**
@@ -63,6 +65,60 @@ DevOpser
   * AWS SSM Session Manager 기반 안전한 서버 접속 (SSH 키 관리 불필요)
   * CloudFront 기반 HTTPS 통신 적용 및 Origin Access Control 구성
   * WAF를 통한 Rate Limiting 및 접근 제어 정책 적용
+
+<details>
+<summary>📌 추가 환경변수 설정 가이드</summary>
+
+### 📝 개요
+
+기본 제공되는 환경변수(`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `DB_USERNAME`, `DB_PASSWORD`) 외에 추가적인 환경변수가 필요한 경우 다음 단계를 따라 설정할 수 있습니다.
+
+### 🔧 설정 단계
+
+#### 1단계: GitHub Secrets 등록
+
+```
+Repository → Settings → Secrets and variables → Actions → New repository secret
+```
+
+**예시:**
+
+* Name: `MY_API_KEY`
+* Secret: `your-api-key-value`
+
+#### 2단계: GitHub Actions 워크플로우 수정
+
+`.github/workflows/deploy.yml` 파일의 **deploy-backend** job에서 Ansible 실행 부분에 환경변수를 추가합니다.
+
+```yaml
+- name: Deploy configuration via Ansible
+  working-directory: ./ansible
+  run: |
+    ansible-playbook -i inventory.ini playbooks/db-config.yaml \
+      -e "rds_endpoint=${{ needs.deploy-infrastructure.outputs.db-endpoint }}" \
+      -e "db_username=${{ secrets.DB_USERNAME }}" \
+      -e "db_password=${{ secrets.DB_PASSWORD }}" \
+      -e "my_api_key=${{ secrets.MY_API_KEY }}" \          # 추가
+      -e "custom_endpoint=${{ secrets.CUSTOM_ENDPOINT }}" \ # 추가
+      -v
+```
+
+#### 3단계: Ansible 템플릿 수정
+
+`ansible/templates/application.yaml.j2` 파일에 새로운 환경변수를 추가합니다.
+
+```yaml
+custom:
+  api-key: {{ my_api_key | default('') }}
+  endpoint: {{ custom_endpoint | default('') }}
+
+external:
+  services:
+    payment-api: {{ my_api_key | default('') }}
+    notification-url: {{ custom_endpoint | default('') }}
+```
+
+</details>  
 
 ## 4. 이용 기술
 
