@@ -19,7 +19,7 @@ const ConnectionStatus = ({ onConnectionChange }) => {
       // 연결 진행 상황 시뮬레이션
       const progressSteps = [
         { progress: 20, message: 'EC2 인스턴스 연결 확인 중...' },
-        { progress: 40, message: 'ALB 헬스 체크 확인 중...' },
+        { progress: 40, message: 'ALB 헬스체크 확인 중...' },
         { progress: 60, message: 'RDS 연결 상태 확인 중...' },
         { progress: 80, message: 'S3 및 CloudFront 확인 중...' },
         { progress: 100, message: 'VPC 네트워크 상태 확인 중...' },
