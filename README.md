@@ -167,7 +167,13 @@ external:
 
 <br>
 
-## 7. 개발 방법
+## 7. 대시보드 구성
+<img width="1780" height="967" alt="image" src="https://github.com/user-attachments/assets/5d848ea0-718a-40ed-aa83-9e5b1d2016df" />
+<img width="1280" height="564" alt="image" src="https://github.com/user-attachments/assets/47c2eef1-6c76-424a-a7e6-5c63fd3bc76e" />
+
+
+
+## 8. 개발 방법
 
 ### 오픈 소스 및 라이브러리 활용
 
@@ -186,7 +192,7 @@ external:
 
 <br>
 
-## 8. 개발 일정
+## 9. 개발 일정
 
 ### 1~2주차 (8월 말 ~ 9월 초): 기반 인프라 구축
 
@@ -222,7 +228,7 @@ external:
 
 <br>
 
-## 9. 참여 인력
+## 10. 참여 인력
 
 **조유성** – DevOps Engineer & Full-Stack Developer
 
