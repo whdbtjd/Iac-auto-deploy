@@ -4,6 +4,7 @@ DevOpser
 본 프로젝트가 데브옵스의 성격을 띄고 있어서, 팀 이름을 **데브옵서(DevOpser)**로 선정하였습니다.
 
 ## 2. 작품 개요
+<img width="1023" height="194" alt="리드미용 워크플로우 drawio" src="https://github.com/user-attachments/assets/dfadfe90-20dc-4707-8940-e8f34e196f5f" />
 
 * Terraform과 Ansible을 활용한 자동화된 CI/CD 파이프라인 구축
 * 레포지토리 포크 후 GitHub Secrets에 환경변수와 AWS 자격증명만 등록하면 즉시 테스트 가능
