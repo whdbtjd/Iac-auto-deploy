@@ -173,7 +173,9 @@ external:
 
 | 메인 대시보드 | 상세 리소스 정보 |
 |:---:|:---:|
-| <img width="890" height="483" alt="메인 대시보드" src="https://github.com/user-attachments/assets/5d848ea0-718a-40ed-aa83-9e5b1d2016df" /> |<img width="1816" height="1370" alt="image" src="https://github.com/user-attachments/assets/99cbf332-b7e6-4022-9547-da0242d80173" />
+| <img width="1816" height="1370" alt="image" src="https://github.com/user-attachments/assets/c3449117-14ed-4d87-a669-2cafc425fdcf" />
+ |<img width="1653" height="536" alt="image" src="https://github.com/user-attachments/assets/0e3b92a6-8331-41a6-bdac-d121b5ba8724" />
+
  |
 | **인프라 전체 현황 한눈에 보기**<br>• EC2, RDS, ALB, S3, CloudFront 상태<br>• 배포 성공/실패 현황<br>• 서비스 URL 접근 링크 | **개별 리소스 세부 정보**<br>• 각 리소스의 상세 설정값<br>• 네트워크 구성 정보<br>• 보안 그룹 및 엔드포인트 현황 |
 
