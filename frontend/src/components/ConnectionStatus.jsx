@@ -14,7 +14,7 @@ const ConnectionStatus = ({ onConnectionChange }) => {
     try {
       setConnectionStatus('checking');
       setConnectionProgress(0);
-      setConnectionMessage('AWS 리소스 연결 상태를 확인 중...');
+      setConnectionMessage('AWS 리소스 연결상태를 확인 중...');
 
       // 연결 진행 상황 시뮬레이션
       const progressSteps = [
