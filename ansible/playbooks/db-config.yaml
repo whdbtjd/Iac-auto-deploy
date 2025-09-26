@@ -2,10 +2,10 @@
 - name: DB configuration
   hosts: webservers
   vars:
-    rds_endpoint: "{{ rds_host }}" # Terraform에서 생성 후 CI/CD로 전달 받아야 함
+    rds_endpoint: "{{ rds_host }}"
     database_name: "{{ db_name | default('voting_db') }}"
     db_username: "{{ db_user | default('admin') }}"
-    db_password: "{{ db_password }}" # 위와 같음
+    db_password: "{{ db_password }}"
 
   tasks:
     - name: Create config directory
