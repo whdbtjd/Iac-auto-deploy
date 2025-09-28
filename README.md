@@ -1,14 +1,9 @@
 # 🚀 Iac를 활용한 배포 자동화 시스템
 
-<br><br>
-
-## 1. 팀 이름: DevOpser
-
-본 프로젝트의 성격이 개발보단 데브옵스에 가까워, 팀 이름을 DevOpser로 선정하였습니다.
 
 <br><br><br>
 
-## 2. 📋 작품 개요
+## 2. 📋 프로젝트 개요
 
 <img width="1023" height="194" alt="리드미용 워크플로우 drawio" src="https://github.com/user-attachments/assets/dfadfe90-20dc-4707-8940-e8f34e196f5f" />
 
