@@ -34,8 +34,8 @@ DB_PASSWORD: RDS MySQL 비밀번호
 ```
 
 #### 자동 배포 방식
-* **백엔드 자동 배포**: `backend/` 디렉토리 내 Spring Boot 코드를 수정 후 푸시하면 JAR 빌드 및 EC2 배포 자동 실행
-* **프론트엔드 자동 배포**: `frontend/` 디렉토리 내 React/Vue 코드를 수정 후 푸시하면 빌드 후 S3 + CloudFront 자동 배포
+* **백엔드 자동 배포**: `backend/` 디렉토리 내 Spring Boot 코드를 수정 혹은 새로 작성 후 푸시하면 JAR 빌드 및 EC2 배포 자동 실행
+* **프론트엔드 자동 배포**: `frontend/` 디렉토리 내 React/Vue 코드를 수정 혹은 새로 작성 후 푸시하면 빌드 후 S3 + CloudFront 자동 배포
 * **인프라 변경**: `terraform/` 또는 `ansible/` 디렉토리 수정 시 해당 인프라 구성요소만 선택적 재배포
 * **조건부 배포**: GitHub Actions가 변경된 디렉토리를 자동 감지하여 필요한 부분만 배포로 시간과 비용 최적화
 
